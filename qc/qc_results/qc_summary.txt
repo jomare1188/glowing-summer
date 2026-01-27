@@ -1,0 +1,10 @@
+QC Pipeline Summary
+===================
+Date: ter jan 13 16:14:17 -03 2026
+Raw reads processed: 18
+Trimmed reads generated: 18
+
+Check the following reports:
+- Raw reads: qc_results/raw_fastqc/raw_multiqc_report.html
+- Trimmed reads: qc_results/trimmed_fastqc/trimmed_multiqc_report.html
+- Individual fastp reports in: qc_results/trimmed_reads/
