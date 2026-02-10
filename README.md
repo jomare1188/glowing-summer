@@ -116,7 +116,7 @@ results/
 │       └── cohort.allsites.filtered.vcf.gz
 ├── metrics/                # QC statistics
 └── logs_parallel/          # Detailed logs for each step
-
+```
 
 ## Results
 
@@ -208,115 +208,4 @@ STEP_SIZE=10
 
 ld_pruned_50K.snps.vcf.gz
 ld_pruned_5K.snps.vcf.gz
-
-
-### Population Genetic Statistics (Pixy Output)
-
-*Add pixy results here:*
-
-#### Nucleotide Diversity (π)
-- Population A: 
-- Population B: 
-
-### Figures
-
-*Add your plots/figures here*
-
-<!-- END RESULTS SECTION -->
-
-```
-
-### Monitoring Progress
-
-Monitor the main log in real-time:
-
-```bash
-tail -f logs_parallel/pipeline_main.log
-```
-
-
-
-- **Reference genome**: *Callicarpa* genome assembly: John P Hamilton, Grant T Godden, Emily Lanier, Wajid Waheed Bhat, Taliesin J Kinser, Brieanne Vaillancourt, Ha    iyan Wang, Joshua C Wood, Jiming Jiang, Pamela S Soltis, Douglas E Soltis, Bjoern Hamberger, C Robin Buell, Gene    ration of a chromosome-scale genome assembly of the insect-repellent terpenoid-producing Lamiaceae species, Callicarpa americana, GigaScience, Volume 9, Issue 9, September 2020, giaa093, https://doi.org/10.1093/gigascience/giaa093  (car_asm.fa)
-
-
-| Sample | Mapped (%) |
-|--------|------------|
-| 547    | 68.82 |
-| 548    | 73.30 |
-| 549    | 16.65 |
-| 550    | 68.66 |
-| 551    | 70.73 |
-| 552    | 77.13 |
-| 553    | 10.71 |
-| 554    | 63.19 |
-| 555    | 23.35 |
-| 556    | 51.35 |
-| 557    | 6.02  |
-| 558    | 6.90  |
-| 559    | 75.34 |
-| 560    | 17.26 |
-| 561    | 36.01 |
-| 562    | 29.70 |
-| 563    | 16.51 |
-| 564    | 11.39 |
-
-
----
-
-| Filter | Threshold | Why? |
-|--------|-----------|------|
-| QD (Quality by Depth) | < 2.0 | Removes variants with low quality relative to depth |
-| FS (Fisher Strand) | > 60.0 | Removes variants showing strand bias |
-| MQ (Mapping Quality) | < 40.0 | Removes variants in hard-to-map regions |
-| SOR (Strand Odds Ratio) | > 3.0 | Another strand bias metric |
-| MQRankSum | < -12.5 | Removes variants where ref/alt reads have different mapping qualities |
-| ReadPosRankSum | < -8.0 | Removes variants at ends of reads (often errors) |
-
-
-#### Initial Quality Filtering
-```bash
---remove-indels              # Keep only SNPs (no insertions/deletions)
---min-meanDP 20              # Minimum average depth of 20x coverage
---max-meanDP 100             # Maximum average depth of 100x (avoid repeats)
---minQ 30                    # Minimum quality score of 30
---max-missing 0.8            # Keep SNPs present in ≥80% of samples
---maf 0.05                   # Minimum allele frequency of 5%
---min-alleles 2              # Exactly 2 alleles (biallelic SNPs)
---max-alleles 2
-```
-
-**Why these filters?**
-- **Depth filters (20-100x)**: Too low = unreliable calls; too high = repetitive regions
-- **Max missing 0.8**: Ensures SNPs are present in most samples for accurate comparisons
-- **MAF 0.05**: Rare variants can be unreliable and don't contribute much to population structure
-- **Biallelic only**: Simplifies analysis and avoids complex multiallelic sites
-
----
-
-
-### Output Files
-
-#### vcf file with all sites (variant and invariant) for diversity calculation using pixy
-- `/home/dmpachon/jorge/TATIANA/snp_calling/snp_calling_pixy/results/variants/all_sites/cohort.allsites.vcf.gz`
-
-
-
-
-#### vcf filtered file (only variant sites and gen pop filters)
-- /home/dmpachon/jorge/TATIANA/snp_calling/snp_calling_pixy/results/variants/filtered/cohort.snps.pass.vcf.gz
-- 4,759,430 SNPs
-
-
-## 💻 Software Used
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **fastp** | 1.0.1 | Quality control and read trimming |
-| **BWA-MEM** | 2.3 | Read alignment to reference genome |
-| **SAMtools** | 1.23 | BAM file manipulation and indexing |
-| **GATK** | 4.6.2.0 | SNP calling and filtering |
-| **BCFtools** | 1.23 | VCF file manipulation |
-| **VCFtools** | 0.1.17 | Population genetics filtering |
-| **PLINK** | 2.0.0a.6.9 | LD pruning and format conversion |
-| **Pixy** | 2.0.0.beta14 | pi diversity estimation |
 
