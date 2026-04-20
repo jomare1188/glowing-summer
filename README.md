@@ -291,6 +291,9 @@ roh_analysis/
 
 > Each boxplot shows F_ROH across all 18 individuals for one ROH length class. A collection with only the short class elevated indicates ancient bottleneck history with no recent close-relative mating. Elevation in the medium or long classes signals ongoing or recent inbreeding and identifies individuals requiring priority attention in the breeding programme.
 
+
+![F_ROH by individual](snp_calling/snp_calling_pixy/results/variants/filtered/vcf_downstream/roh_analysis/froh_results/froh_by_individual.png
+
 ---
 
 ### Interpreting Results
