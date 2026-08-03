@@ -1,10 +1,36 @@
 QC Pipeline Summary
 ===================
-Date: ter jan 13 16:14:17 -03 2026
-Raw reads processed: 18
-Trimmed reads generated: 18
+Date:           Wed Jul 29 11:27:39 AM -03 2026
+Input:          ../raw/
+Output:         qc_results/
+Genome size:    506362408 bp
+5' hard trim:   14 bp
+Read pairs in:  18
+Read pairs out: 18
 
-Check the following reports:
-- Raw reads: qc_results/raw_fastqc/raw_multiqc_report.html
-- Trimmed reads: qc_results/trimmed_fastqc/trimmed_multiqc_report.html
-- Individual fastp reports in: qc_results/trimmed_reads/
+Reports:
+  Raw reads:       qc_results//reports/raw_multiqc_report.html
+  Trimmed reads:   qc_results//reports/trimmed_multiqc_report.html
+  Yield/coverage:  qc_results//reports/yield_per_sample.csv
+  GC screen:       qc_results//contamination_screen/gc_distribution_summary.tsv
+
+Estimated coverage (upper bound: assumes 100% mapping, 0% duplicates):
+sample  raw_reads  raw_gbases  clean_reads  clean_gbases  pct_bases_retained  q30_rate  gc_content  duplication_rate  est_coverage_X
+547     245939614  36.89       244927122    33.27         90.19               90.92     43.23       1.84              65.71
+548     195567836  29.34       194279034    26.39         89.96               87.14     38.57       1.38              52.12
+549     285431206  42.81       283747192    38.58         90.1                88.83     54.29       2.1               76.18
+550     252320372  37.85       251576030    34.18         90.3                91.14     43.58       2.13              67.49
+551     202047758  30.31       201342146    27.35         90.25               90.48     43.96       1.58              54.02
+552     253948462  38.09       253444792    34.41         90.33               93.15     42.9        2.35              67.95
+553     214272834  32.14       213443402    28.97         90.14               90.19     53.16       2.11              57.22
+554     323141694  48.47       321759102    43.72         90.21               90.19     44.47       2.22              86.35
+555     212680254  31.9        211327912    28.69         89.93               88.97     54.23       1.62              56.66
+556     210045346  31.51       208804396    28.35         89.99               89.64     48.3        1.54              55.99
+557     244887608  36.73       242695082    32.97         89.76               87.79     61.39       1.82              65.11
+558     257305680  38.6        256049586    34.79         90.13               89.79     61.39       1.86              68.7
+559     365510476  54.83       364479000    49.48         90.25               91.88     42.21       2.68              97.72
+560     352429654  52.86       350883060    47.63         90.1                91.15     55.61       2.62              94.07
+561     309046238  46.36       308423220    41.84         90.25               93.34     49.52       2.43              82.62
+562     300490828  45.07       299122834    40.6          90.08               90.68     50.88       2.21              80.19
+563     211961358  31.79       210766172    28.65         90.1                89.6      55.53       1.53              56.58
+564     304540218  45.68       302799684    41.15         90.07               89.15     53.47       2.07              81.26

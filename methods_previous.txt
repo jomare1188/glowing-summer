@@ -1,0 +1,204 @@
+Raw paired-end reads were quality- and adapter-trimmed using fastp v1.0.1 with adapter sequences auto-detected from read overlaps (--detect_adapter_for_pe). The first 14 bp of each read were hard-trimmed, poly-G and poly-X tails were removed, and a low-complexity filter (complexity threshold 30%) was applied. Reads were quality-filtered using a Phred quality threshold of 20, discarding reads with more than 30% low-quality bases, and overlap-based error correction was performed for paired reads (minimum overlap 30 bp, allowing up to 5 mismatches). Reads shorter than 50 bp after trimming were discarded. Read quality before and after trimming was assessed with FastQC and summarized with MultiQC.
+
+
+Raw Data Processing and SNPs Identification
+Sequencing reads were first assessed for overall quality using FastQC (Andrews 2010), and subsequently processed with fastp v1.0.1 (Chen 2025), which removed adapters and low‑confidence bases while retaining high‑quality read pairs suitable for robust genotyping. Following quality control, we aligned filtered reads to the most complete reference genome available for a closely related species, Callicarpa americana,  (Hamilton et al. 2020), using BWA‑MEM v2.3. (Li 2013). Aligned reads were sorted and indexed using SAMtools v1.23 (Li et al. 2009), and duplicate reads were identified with GATK MarkDuplicates v4.6.2.0 (McKenna et al. 2010). 
+To characterize genomic variation across all individuals, we employed the GVCF workflow in GATK HaplotypeCaller v4.6.2.0 (McKenna et al., 2010; DePristo et al., 2011). This approach generates per‑sample genotype likelihoods across every genomic position, including monomorphic sites, enabling unbiased estimation of population‑level diversity. Individual GVCFs were subsequently combined and genotyped jointly using GATK GenotypeGVCFs (McKenna et al., 2010; DePristo et al., 2011), producing a cohort‑wide “all‑sites” VCF in which both segregating and invariant positions were retained. 
+Quality filters were applied to both variant and invariant sites. For variant sites, we removed genotypes whose quality metrics indicated potential sequencing or alignment artifacts. Specifically, any SNP with Quality by Depth (QD) < 2.0, Fisher Strand bias (FS) > 60.0, Mapping Quality (MQ) < 40.0, Strand Odds Ratio (SOR) > 3.0, MQRankSum < –12.5, or ReadPosRankSum < –8.0 was excluded. In addition to these site‑level filters, we applied population‑based quality criteria to guard against biases from rare or poorly represented alleles, removing indels, variants failing Hardy–Weinberg equilibrium at p < 0.01, extremely low‑frequency alleles (MAF < 0.01), and sites with excessive missingness (> 20% missing genotypes) or unrealistic depth values (mean depth < 20× or > 500×). Invariant sites were filtered separately using criteria appropriate for monomorphic loci, retaining only sites with depth between 20× and 500× and MQ ≥ 40, ensuring that retained “invariant” positions truly reflected conserved genomic regions rather than low‑coverage or misaligned reads.
+Additional population‑level filters were applied using BCFtools v1.23 (Danecek et al., 2021),and VCFtools v0.1.17(Danecek et al., 2011), to remove sites with excessive missing data, extremely low allele frequencies, or depth values inconsistent with true genomic coverage. Invariant sites were evaluated separately using depth‑ and mapping‑based criteria to exclude false monomorphic positions arising from alignment errors or collapsed repeats.
+To avoid LD‑induced pseudoreplication in ordination and clustering analyses, we generated LD‑pruned panels using PLINK v2.0.0a.6.9 (Purcell et al., 2007; Chang et al., 2015) with a sliding window of 50 SNPs, a step size of 10 SNPs, and an r² threshold of 0.2. We retained two analysis‑ready subsets with 50K and 5K LD pruned SNPS that balance genome‑wide representation with marker independence (Purcell et al., 2007; Alexander et al., 2009).
+
+
+================================================================================
+CORRECTED VERSION (verified against pipeline scripts and conda environments)
+Focus: variant-site identification. pixy / invariant-site (all-sites) branch removed.
+Version flags marked [VERIFY] could NOT be confirmed from the repo — resolve before submission.
+================================================================================
+
+Raw Data Processing and SNP Identification
+Sequencing reads were assessed for overall quality with FastQC v0.12.1 (Andrews 2010) and processed with fastp v1.0.1 (Chen et al. 2018), which removed adapters and low-confidence bases while retaining high-quality read pairs suitable for genotyping. Filtered reads were aligned to the reference genome of the closely related species Callicarpa americana (Hamilton et al. 2020) using BWA-MEM [VERIFY version: script calls `bwa mem`; base environment provides BWA v0.7.17 (Li 2013), but BWA-MEM2 (Vasimuddin et al. 2019) index files are present for the reference] with alignments flagged for downstream compatibility (-M) and per-sample read groups assigned. Alignments were sorted and indexed with SAMtools v1.23 (Li et al. 2009), and duplicate reads were marked with GATK MarkDuplicates v4.6.2.0 (McKenna et al. 2010).
+
+Per-sample variants were called with GATK HaplotypeCaller v4.6.2.0 in GVCF mode (-ERC GVCF; minimum base quality 20) (McKenna et al. 2010; DePristo et al. 2011). Individual GVCFs were merged with GATK CombineGVCFs and jointly genotyped with GATK GenotypeGVCFs to produce a cohort-wide VCF. SNPs were extracted with GATK SelectVariants (-select-type SNP) and subjected to hard filtering with GATK VariantFiltration, excluding sites with Quality by Depth (QD) < 2.0, Fisher Strand bias (FS) > 60.0, RMS Mapping Quality (MQ) < 40.0, Strand Odds Ratio (SOR) > 3.0, MQRankSum < -12.5, or ReadPosRankSum < -8.0; only variants passing all filters (PASS) were retained using BCFtools v1.19 (Danecek et al. 2021).
+
+The resulting SNP set was further filtered with VCFtools v0.1.17 (Danecek et al. 2011) to remove indels and to retain only biallelic sites conforming to Hardy-Weinberg equilibrium (p >= 0.01), with minor allele frequency >= 0.01, no more than 20% missing genotypes (--max-missing 0.8), and mean site depth between 20x and 500x. To reduce linkage-disequilibrium-induced pseudoreplication in ordination and clustering analyses, the filtered SNP panel was LD-pruned with PLINK v1.9 (Purcell et al. 2007; Chang et al. 2015) using a 50-SNP sliding window, a 10-SNP step, and an r^2 threshold of 0.2 (--indep-pairwise 50 10 0.2). From the LD-pruned panel we drew two random subsets of 50,000 and 5,000 SNPs to balance genome-wide representation with marker independence for downstream population-genetic analyses.
+
+
+ROH- analysis 
+
+To characterize the inbreeding history of each individual across different timescales, we performed a Runs of Homozygosity (ROH) analysis on the full filtered SNP dataset (645,785 SNPs). Prior to ROH detection, the VCF was filtered to retain only biallelic SNPs using BCFtools v1.23, followed by call-rate filtering (maximum missingness 10%) and minor allele frequency (MAF) filtering using VCFtools v0.1.17. Two parallel MAF thresholds were applied (MAF ≥ 0.05 and MAF ≥ 0.10) to assess sensitivity. HWE filtering was intentionally excluded, as inbred individuals systematically violate HWE expectations at heterozygous loci, and applying such a filter would remove the signal being quantified.
+ROH segments were detected using PLINK v1.9 (--homozyg) under three length classes reflecting distinct inbreeding timescales: short ROH (≥ 100 kb, ≥ 25 SNPs, gap ≤ 1,000 kb), indicative of ancient or background inbreeding; medium ROH (≥ 500 kb, ≥ 50 SNPs, gap ≤ 1,000 kb), reflecting inbreeding several generations back; and long ROH (≥ 1,500 kb, ≥ 100 SNPs, gap ≤ 500 kb), indicative of recent inbreeding within one to three generations. The gap parameter for long ROH was set more stringently (500 kb) to prevent artifactual merging of distinct recent segments. The individual genomic inbreeding coefficient F~ROH~ was calculated for each individual and ROH class as the total length of ROH segments (converted to base pairs) divided by the autosomal genome size (506,362,408 bp). MAF sensitivity was assessed by comparing F~ROH~ values across both thresholds; where estimates were consistent, MAF ≥ 0.05 results are reported as the primary output given the improved segment boundary resolution afforded by higher SNP density.
+
+
+================================================================================
+CLAUDE REVIEW OF THE ROH PARAGRAPH (verified against roh_claude.sh + result files)
+================================================================================
+
+VERDICT: Mostly accurate. All ROH length-class parameters, MAF thresholds, the
+call-rate cutoff, the HWE-exclusion rationale, PLINK v1.9 --homozyg, and the
+F_ROH formula match the script. THREE factual errors and some missing detail:
+
+[ERROR 1 — SNP count] "full filtered SNP dataset (645,785 SNPs)" is incorrect.
+  That number does not appear anywhere in the results. The actual ROH input was
+  cohort.snps.pass.vcf.gz = 10,545,100 SNPs across 18 individuals. After the
+  biallelic + call-rate (max-missing 0.9) + MAF filters this became:
+      MAF >= 0.05 -> 1,511,105 SNPs
+      MAF >= 0.10 -> 1,259,678 SNPs
+  There is no single "645,785 SNP" dataset — replace with the numbers above.
+
+[ERROR 2 — "autosomal genome size"] 506,362,408 bp is the FULL assembly length
+  (17 chromosomes + unplaced scaffolds), not the autosomal length. Chromosomes
+  Chr01-17 alone sum to 493,744,786 bp. The F_ROH denominator used by the script
+  IS 506,362,408 bp, so the value is fine but call it "total assembly length"
+  (or restrict the denominator to autosomes if that was the intent).
+
+[ERROR 3 — BCFtools version] Text says v1.23; the SNP_call conda environment
+  provides bcftools 1.19. Confirm the version actually used before submission.
+
+[MISSING] (a) VCF->PLINK conversion used PLINK2 v2.0.0-a.6.9 (log-confirmed),
+  distinct from the PLINK v1.9 used for --homozyg. (b) The --homozyg run also set
+  --homozyg-density 50, --homozyg-window-snp (= class SNP count: 25/50/100),
+  --homozyg-window-het 1, and --homozyg-window-missing 5. Report these for
+  reproducibility.
+
+--------------------------------------------------------------------------------
+CORRECTED ROH PARAGRAPH
+--------------------------------------------------------------------------------
+Runs of Homozygosity (ROH) analysis
+To characterize the inbreeding history of each of the 18 individuals across
+different timescales, we performed a Runs of Homozygosity (ROH) analysis. The
+PASS-filtered cohort SNP set (10,545,100 SNPs) was restricted to biallelic SNPs
+with BCFtools [VERIFY version: 1.19 in the SNP_call environment] and then
+call-rate filtered (maximum 10% missing genotypes, --max-missing 0.9) and
+minor-allele-frequency filtered with VCFtools v0.1.17, yielding 1,511,105 SNPs
+at MAF >= 0.05 and 1,259,678 SNPs at MAF >= 0.10. Both MAF thresholds were
+retained to assess sensitivity. Hardy-Weinberg filtering was intentionally
+omitted, because inbred individuals systematically violate HWE at heterozygous
+loci and such a filter would remove the signal being quantified.
+
+Filtered VCFs were converted to PLINK binary format with PLINK2 v2.0.0-a.6.9,
+and ROH segments were detected with PLINK v1.9 (--homozyg) under three length
+classes reflecting distinct inbreeding timescales: short (>= 100 kb, >= 25 SNPs,
+gap <= 1,000 kb; ancient/background inbreeding), medium (>= 500 kb, >= 50 SNPs,
+gap <= 1,000 kb; several generations back), and long (>= 1,500 kb, >= 100 SNPs,
+gap <= 500 kb; recent inbreeding within one to three generations). The scanning
+window allowed one heterozygous and up to five missing calls per window
+(--homozyg-window-het 1, --homozyg-window-missing 5), with the window SNP count
+matched to each class (--homozyg-window-snp 25/50/100) and a maximum density of
+one SNP per 50 kb (--homozyg-density 50); the more stringent gap for the long
+class (500 kb) prevented artifactual merging of distinct recent segments. The
+individual genomic inbreeding coefficient F_ROH was computed for each individual
+and length class as the summed ROH length divided by the total assembly length
+(506,362,408 bp). Estimates were concordant across MAF thresholds, and MAF >= 0.05
+results are reported as the primary output given the higher SNP density
+(1.51 M vs 1.26 M SNPs) and consequently finer segment-boundary resolution.
+
+
+#### FULL UPDATED METHODS ####
+
+Raw Data Processing and SNPs Identification
+Raw paired-end reads were quality and adapter trimmed using Sequencing reads were first assessed for overall quality using FastQC (Andrews 2010), and subsequently processed with fastp v1.0.1 (Chen 2025), with adapter sequences auto-detected from read overlaps (--detect_adapter_for_pe). The first 14 bp of each read were hard-trimmed, poly-G and poly-X tails were removed, and a low-complexity filter (complexity threshold 30%) was applied. Reads were quality-filtered using a Phred quality threshold of 20, discarding reads with more than 30% low-quality bases, and overlap-based error correction was performed for paired reads (minimum overlap 30 bp, allowing up to 5 mismatches). Reads shorter than 50 bp after trimming were discarded. Read quality before and after trimming was assessed with FastQC (Chen 2025) and summarized with MultiQC (https://academic.oup.com/bioinformatics/article/32/19/3047/2196507).which removed adapters and low‑confidence bases while retaining high‑quality read pairs suitable for robust genotyping. Following quality control, we aligned filtered reads to the most complete reference genome available for a closely related species, Callicarpa americana,  (Hamilton et al. 2020), using BWA‑MEM v2.3. (Li 2013) with alignments flagged for downstream compatibility (-M) and per-sample read groups assigned. Then aAligned reads were sorted and indexed using SAMtools v1.23 (Li et al. 2009), and duplicate reads were identified with GATK MarkDuplicates v4.6.2.0 (McKenna et al. 2010). 
+To characterize genomic variation across all individuals, we employed the GVCF workflow in GATK HaplotypeCaller v4.6.2.0 (McKenna et al., 2010; DePristo et al., 2011). This approach generates per‑sample genotype likelihoods across every genomic position, including monomorphic sites, enabling unbiased estimation of population‑level diversity. Individual GVCFs were subsequently combined and genotyped jointly using GATK GenotypeGVCFs (McKenna et al., 2010; DePristo et al., 2011), producing a cohort‑wide “all‑sites” VCF in which both segregating and variant invariant positions were retained. 
+Quality filters were applied to both variant and invariant sites. For variant sites, we removed genotypes whose quality metrics indicated potential sequencing or alignment artifacts. Specifically, any SNP with Quality by Depth (QD) < 2.0, Fisher Strand bias (FS) > 60.0, Mapping Quality (MQ) < 40.0, Strand Odds Ratio (SOR) > 3.0, MQRankSum < –12.5, or ReadPosRankSum < –8.0 was excluded. In addition to these site‑level filters, we applied population‑based quality criteria to guard against biases from rare or poorly represented alleles, removing indels, variants failing Hardy–Weinberg equilibrium at p < 0.01, extremely low‑frequency alleles (MAF < 0.01), and sites with excessive missingness (> 20% missing genotypes) or unrealistic depth values (mean depth < 20× or > 500×). Invariant sites were filtered separately using criteria appropriate for monomorphic loci, retaining only sites with depth between 20× and 500× and MQ ≥ 40, ensuring that retained “invariant” positions truly reflected conserved genomic regions rather than low‑coverage or misaligned reads.
+Additional population‑level filters were applied using BCFtools v1.23 (Danecek et al., 2021),and VCFtools v0.1.17(Danecek et al., 2011), to remove sites with excessive missing data, extremely low allele frequencies, or depth values inconsistent with true genomic coverage. Invariant sites were evaluated separately using depth‑ and mapping‑based criteria to exclude false monomorphic positions arising from alignment errors or collapsed repeats.
+To avoid LD‑induced pseudoreplication in ordination and clustering analyses, we generated LD‑pruned panels using PLINK v2.0.0a.6.9 (Purcell et al., 2007; Chang et al., 2015) with a sliding window of 50 SNPs, a step size of 10 SNPs, and an r² threshold of 0.2. We retained two analysis‑ready subsets with 50K and 5K LD pruned SNPS that balance genome‑wide representation with marker independence (Purcell et al., 2007; Alexander et al., 2009).
+
+
+Runs of Homozygosity
+To characterize the inbreeding history of each 18 individuals across different timescales, we performed a Runs of Homozygosity (ROH) analysis on the full filtered SNP dataset (645,785 SNPs). Prior to ROH detection, the VCF was filtered to retain only biallelic SNPs using BCFtools v1.23, followed by call-rate filtering (maximum missingness 10%) and minor allele frequency (MAF) filtering using VCFtools v0.1.17. Two parallel MAF thresholds were applied (MAF ≥ 0.05 and MAF ≥ 0.10) to assess sensitivity. HWE filtering was intentionally excluded, as inbred individuals systematically violate HWE expectations at heterozygous loci, and applying such a filter would remove the signal being quantified.
+ROH segments were detected using PLINK v1.9 (--homozyg) under three length classes reflecting distinct inbreeding timescales: short ROH (≥ 100 kb, ≥ 25 SNPs, gap ≤ 1,000 kb), indicative of ancient or background inbreeding; medium ROH (≥ 500 kb, ≥ 50 SNPs, gap ≤ 1,000 kb), reflecting inbreeding several generations back; and long ROH (≥ 1,500 kb, ≥ 100 SNPs, gap ≤ 500 kb), indicative of recent inbreeding within one to three generations. The gap parameter for long ROH was set more stringently (500 kb) to prevent artifactual merging of distinct recent segments. The individual genomic inbreeding coefficient F~ROH~ was calculated for each individual and ROH class as the total length of ROH segments (converted to base pairs) divided by the autosomal genome size (506,362,408 bp). MAF sensitivity was assessed by comparing F~ROH~ values across both thresholds; where estimates were consistent, MAF ≥ 0.05 results are reported as the primary output given the improved segment boundary resolution afforded by higher SNP density.
+
+
+
+################################################################################
+########  CLEAN CORRECTED FULL METHODS — with explicit dataset provenance  #####
+########  (verified against pipeline scripts, conda envs, and result files) ####
+################################################################################
+
+-------------------------------------------------------------------------------
+!! READ FIRST — which dataset each analysis used, and one issue to resolve !!
+-------------------------------------------------------------------------------
+The analyses were NOT all run on one shared SNP set. There are three datasets:
+
+  DATASET               SOURCE FILE                         SIZE          USED BY
+  A. GATK-PASS SNPs     results/.../cohort.snps.pass.vcf.gz 10,545,100    ROH input
+  B. Population-filtered snp_calling_pixy/.../               645,789      PCA + STRUCTURE
+     biallelic SNPs      cohort.snps.final.vcf.gz                         (via 50K/5K panels)
+  C. ROH working sets    derived from A (no HWE filter)      1,511,105    ROH (MAF 0.05, primary)
+                                                             1,259,678    ROH (MAF 0.10, sensitivity)
+
+  * The "645,785 SNPs" in your ROH paragraph actually belongs to DATASET B
+    (the PCA/STRUCTURE input, 645,789 SNPs) — it was placed in the wrong section.
+  * ROH (Dataset A/C) and PCA/STRUCTURE (Dataset B) were derived from TWO DIFFERENT
+    GATK runs: the two pipelines have different PASS counts (10,545,100 vs 4,778,683
+    SNPs). CONFIRM this was intentional, or re-run both analyses from a single
+    variant-calling run before submission. This is the main thing to fix.
+  * Unresolved tool versions flagged [VERIFY]: BWA (script says `bwa mem`; base env
+    = v0.7.17, but BWA-MEM2 index files present) and BCFtools (text says 1.23; the
+    SNP_call env has 1.19).
+  * pixy was set up but NOT used; the pixy/invariant-site branch is omitted below.
+    (Dataset B's variant VCF comes from that pipeline but was used only for LD
+    pruning, not for pixy.)
+
+===============================================================================
+Read quality control and trimming
+Raw paired-end reads were assessed with FastQC v0.12.1 (Andrews 2010) and quality-
+and adapter-trimmed with fastp v1.0.1 (Chen et al. 2018), with adapters auto-
+detected from read overlaps (--detect_adapter_for_pe). The first 14 bp of each read
+were hard-trimmed, poly-G and poly-X tails removed, and a low-complexity filter
+(complexity threshold 30%) applied. Reads were quality-filtered at a Phred threshold
+of 20, discarding reads with more than 30% low-quality bases, with overlap-based
+error correction for read pairs (minimum overlap 30 bp, up to 5 mismatches). Reads
+shorter than 50 bp after trimming were discarded. Read quality before and after
+trimming was summarized with MultiQC (Ewels et al. 2016).
+
+Read alignment and variant calling
+Trimmed reads from the 18 individuals were aligned to the reference genome of the
+closely related species Callicarpa americana (Hamilton et al. 2020) with BWA-MEM
+[VERIFY version] (-M; per-sample read groups). Alignments were coordinate-sorted and
+indexed with SAMtools v1.23 (Li et al. 2009) and duplicates marked with GATK
+MarkDuplicates v4.6.2.0 (McKenna et al. 2010). Per-sample variants were called with
+GATK HaplotypeCaller v4.6.2.0 in GVCF mode (-ERC GVCF; minimum base quality 20;
+McKenna et al. 2010; DePristo et al. 2011), and GVCFs were combined (CombineGVCFs)
+and jointly genotyped (GenotypeGVCFs) into a cohort VCF. SNPs were selected
+(SelectVariants -select-type SNP) and hard-filtered with GATK VariantFiltration,
+excluding sites with QD < 2.0, FS > 60.0, MQ < 40.0, SOR > 3.0, MQRankSum < -12.5,
+or ReadPosRankSum < -8.0; PASS variants were retained with BCFtools [VERIFY version]
+(Danecek et al. 2021), yielding 10,545,100 SNPs (Dataset A).
+
+Population structure (PCA and admixture/clustering)
+For ordination and clustering, PASS SNPs were population-filtered with VCFtools
+v0.1.17 (Danecek et al. 2011) to biallelic sites, removing indels and retaining sites
+in Hardy-Weinberg equilibrium (p >= 0.01) with MAF >= 0.01, <= 20% missing genotypes
+(--max-missing 0.8), and mean depth 20-500x, producing 645,789 SNPs (Dataset B). To
+reduce LD-induced pseudoreplication, this set was LD-pruned with PLINK v1.9 (Purcell
+et al. 2007; Chang et al. 2015; --indep-pairwise 50 10 0.2: 50-SNP window, 10-SNP
+step, r^2 threshold 0.2), and two random subsets of 50,000 and 5,000 SNPs were drawn
+to balance genome-wide representation with marker independence. These LD-pruned panels
+were the input for the principal component analysis and admixture/clustering analyses
+(Alexander et al. 2009).
+
+Runs of Homozygosity (ROH)
+ROH were analysed for each of the 18 individuals from the PASS SNP set (Dataset A;
+10,545,100 SNPs) — independently of, and less stringently than, the population-
+structure panels. The set was restricted to biallelic SNPs with BCFtools [VERIFY
+version], then call-rate filtered (<= 10% missing genotypes, --max-missing 0.9) and
+MAF-filtered with VCFtools v0.1.17 at two thresholds, yielding 1,511,105 SNPs (MAF
+>= 0.05) and 1,259,678 SNPs (MAF >= 0.10) (Dataset C). Hardy-Weinberg filtering was
+deliberately omitted, because inbred individuals systematically violate HWE at
+heterozygous loci and such a filter would remove the signal being quantified.
+Filtered VCFs were converted to PLINK binary format with PLINK2 v2.0.0-a.6.9, and
+ROH were detected with PLINK v1.9 (--homozyg) in three length classes: short
+(>= 100 kb, >= 25 SNPs, gap <= 1,000 kb; ancient/background inbreeding), medium
+(>= 500 kb, >= 50 SNPs, gap <= 1,000 kb; several generations back), and long
+(>= 1,500 kb, >= 100 SNPs, gap <= 500 kb; recent inbreeding, 1-3 generations). The
+scanning window allowed one heterozygous and up to five missing calls
+(--homozyg-window-het 1, --homozyg-window-missing 5), the window SNP count matched
+each class (--homozyg-window-snp 25/50/100), and density was capped at one SNP per
+50 kb (--homozyg-density 50); the stricter long-class gap (500 kb) prevented
+artifactual merging of distinct recent segments. The genomic inbreeding coefficient
+F_ROH was computed per individual and class as summed ROH length divided by total
+assembly length (506,362,408 bp). Estimates were concordant across MAF thresholds,
+and MAF >= 0.05 results are reported as primary given the higher SNP density
+(1.51 M vs 1.26 M SNPs) and finer segment-boundary resolution.
+
+claude --resume 08e82e1c-6458-4215-b5a3-c519626989b7
