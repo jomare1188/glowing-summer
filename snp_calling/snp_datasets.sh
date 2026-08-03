@@ -461,6 +461,16 @@ genotype_dataset() {
 # PHASE 3c — DOWNSTREAM SETS PER DATASET
 ################################################################################
 
+# Deterministic byte stream for `shuf --random-source`, per the GNU coreutils
+# manual. Do NOT substitute `<(yes SEED)`: that is a constant stream, which
+# makes shuf's permutation degenerate rather than seeded. The symptom is subtle
+# and easy to miss -- the draw is the right SIZE but is heavily clustered on
+# whichever records come first, so a 5K panel drawn that way lost 6 of 17
+# chromosomes and put 47% of its markers on Chr01.
+seeded_random() {
+    openssl enc -aes-256-ctr -pass "pass:$1" -nosalt </dev/zero 2>/dev/null
+}
+
 ld_prune_and_subset() {
     local tag=$1
     local dd="${OUT_DIR}/${tag}"
@@ -507,7 +517,8 @@ ld_prune_and_subset() {
             # shuf needs the body only; the header is prepended untouched so the
             # result stays a valid VCF, and re-sorting keeps it tabix-indexable.
             { bcftools view -h "${pruned}"
-              bcftools view -H "${pruned}" | shuf -n "${n}" --random-source=<(yes "${SUBSAMPLE_SEED}") \
+              bcftools view -H "${pruned}" | shuf -n "${n}" \
+                    --random-source=<(seeded_random "${SUBSAMPLE_SEED}") \
                 | sort -k1,1 -k2,2n
             } | bgzip -@ 4 > "${out}"
             tabix -f -p vcf "${out}"
