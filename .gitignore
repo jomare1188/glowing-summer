@@ -1,0 +1,102 @@
+# ---------------------------------------------------------------------------
+# Allowlist: everything is ignored unless it is re-allowed below.
+#
+# This working tree holds ~1.4 TB of sequence data (raw/ alone is 645 GB, and
+# snp_calling/results/ carries several 3 GB VCFs). A blocklist would be one
+# forgotten pattern away from staging a multi-gigabyte file, so the default
+# here is "ignore" and every tracked class of file is named explicitly.
+#
+# Rule of thumb: track what a reader needs to understand or reproduce the
+# analysis -- scripts, environments, documentation, small tables, figures.
+# Anything the tracked scripts can regenerate from the raw data stays out.
+# ---------------------------------------------------------------------------
+
+# Ignore everything ...
+*
+# ... but still descend into directories, so the rules below can match.
+!*/
+
+# --- Code, environments, documentation -------------------------------------
+!.gitignore
+!*.sh
+!*.R
+!*.py
+!*.yml
+!*.yaml
+!*.md
+
+# --- Small tabular results and figures --------------------------------------
+!*.csv
+!*.tsv
+!*.png
+!*.pdf
+
+# --- Named text outputs (a blanket *.txt would sweep in annotation tables) ---
+!methods.txt
+!methods_previous.txt
+!raw/QC.txt
+!raw/md5.txt
+!qc/qc_results/qc_summary.txt
+!qc/qc_results/contamination_screen/*.kraken2.report.txt
+!snp_calling/results/metrics/*.txt
+
+# v1 (pixy) results, kept so the superseded analysis stays readable in the
+# tree and not only in git history. Note the surrounding directory holds
+# 135 GB of BAMs and per-job logs, so these are named file by file.
+!snp_calling/old/snp_calling_pixy/results/metrics/*.txt
+!snp_calling/old/snp_calling_pixy/results/variants/filtered/*.stats.txt
+!snp_calling/old/snp_calling_pixy/results/variants/filtered/vcf_downstream/*.stats.txt
+
+# PLINK --homozyg run outputs. *.hom.summary is deliberately NOT re-allowed:
+# it carries one row per SNP and runs to ~95 MB per class per dataset, which
+# is past GitHub's 50 MB warning threshold and is regenerable from the .bed.
+!snp_calling/results/d*/roh_analysis/*.hom
+!snp_calling/results/d*/roh_analysis/*.hom.indiv
+!snp_calling/results/d*/roh_analysis/*.log
+!snp_calling/results/d*/roh_analysis/density_*.txt
+
+# --- MultiQC reports (self-contained HTML; the *_data/ side-cars are not) ---
+!qc/qc_results/reports/*.html
+
+# ---------------------------------------------------------------------------
+# Final re-exclusions. These come last so they win over the rules above,
+# whatever the file extension happens to be.
+# ---------------------------------------------------------------------------
+
+# Reference genome and annotation: redistributed elsewhere, not ours to host.
+/CallicarpaGenome/
+
+# Vendored binary.
+/rclone-*/
+
+# Sequence data.
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.bam
+*.bai
+*.cram
+*.crai
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+*.g.vcf.gz
+*.bed
+*.bim
+*.fam
+
+# Intermediate trees that hold only bulk data.
+qc/qc_results/trimmed_reads/
+snp_calling/results/*/gvcf/
+snp_calling/results/*/raw/
+snp_calling/results/*/bam/
+snp_calling/results/variants/
+
+# MultiQC side-car data directories (17-25 MB of JSON/parquet per report).
+*_multiqc_report_data/
+
+# Editor and OS noise.
+*~
+*.swp
+.DS_Store

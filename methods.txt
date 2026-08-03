@@ -1,0 +1,318 @@
+================================================================================
+METHODS — SNP DISCOVERY IN CALLICARPA sp. WITH CONTAMINATION SCREENING
+AND DEPTH-EQUALISED DATASETS
+================================================================================
+Written 2026-07-28. Supersedes the previous version, retained as
+methods_previous.txt. Versions below were read from the installed binaries under
+the activation sequence the pipeline actually uses, not from documentation.
+
+Pipeline scripts:
+  qc/qc_pipeline_v2.sh        read QC, trimming, contamination screening
+  qc/setup_kraken_db.sh       Kraken2 reference database installation
+  snp_calling/snp_datasets.sh alignment through to analysis-ready VCFs
+  snp_calling/monitor_datasets.sh  progress monitoring (read-only)
+
+--------------------------------------------------------------------------------
+1. RATIONALE
+--------------------------------------------------------------------------------
+
+An initial analysis of these 18 whole genomes produced population-genetic
+estimates that were difficult to interpret. The cause was traced to two linked
+problems. First, the proportion of reads aligning to the reference varied from
+5.9% to 76.8% across samples, despite near-uniform raw sequencing effort (52-98x
+of raw data per sample). Second, the resulting usable coverage therefore ranged
+from 3.9x to 73.3x, a 19-fold spread. Sequencing depth of that heterogeneity
+affects both which sites are callable and how confidently genotypes are assigned
+at those sites, so allele frequencies and every statistic derived from them are
+confounded with per-sample coverage.
+
+The analysis presented here addresses both problems directly: the source of the
+non-aligning reads is identified and quantified, samples that cannot support
+reliable genotyping are excluded on a stated criterion, and the remaining samples
+are downsampled to a common depth so that coverage no longer varies across the
+cohort.
+
+--------------------------------------------------------------------------------
+2. READ QUALITY CONTROL AND TRIMMING
+--------------------------------------------------------------------------------
+
+Raw paired-end reads (2 x 150 bp, Illumina) were assessed with FastQC v0.12.1 and
+summarised with MultiQC v1.33. Reads were processed with fastp v1.0.1 with
+adapters auto-detected from read overlap (--detect_adapter_for_pe). The first
+14 bp of each read were hard-trimmed (-f 14 -F 14); poly-G and poly-X tails were
+removed; a low-complexity filter was applied (--low_complexity_filter,
+--complexity_threshold 30); bases below Phred 20 were treated as unqualified and
+reads with more than 30% unqualified bases were discarded
+(--qualified_quality_phred 20, --unqualified_percent_limit 30); overlap-based
+error correction was performed for read pairs (--correction,
+--overlap_len_require 30, --overlap_diff_limit 5); and reads shorter than 50 bp
+after trimming were discarded (--length_required 50). Trimmed reads were
+re-assessed with FastQC and MultiQC.
+
+Per-sample yield was tabulated from the fastp JSON reports, recording raw and
+retained reads and bases, the fraction of bases retained, Q30 rate, GC content,
+duplication rate, and a theoretical coverage estimate (retained bases divided by
+the 506,362,408 bp reference). This table is the primary record of sequencing
+effort per sample and is independent of any downstream alignment.
+
+--------------------------------------------------------------------------------
+3. CONTAMINATION SCREENING
+--------------------------------------------------------------------------------
+
+Because the initial mapping failures pointed to non-target DNA rather than to
+read quality, a taxonomic screen was added upstream of alignment. For each
+sample, 100,000 read pairs were classified with Kraken2 v2.17.1 against the
+PlusPFP index (release k2_pluspfp_16_GB_20260626), which contains bacterial,
+archaeal, viral, protozoan, fungal, plant and human references. A database
+including plants and fungi was required: an index restricted to bacteria and
+human would report both the target genome and any plant or fungal contaminant as
+unclassified and would therefore be uninformative here.
+
+The absolute proportion of classified reads is not a meaningful contamination
+metric in this system. Callicarpa americana is not represented in RefSeq at the
+genome level, so approximately 91-96% of reads are unclassified even in the
+cleanest samples. What distinguishes samples is the composition of the classified
+fraction. Reads originating from the target are assigned to the nearest available
+relatives, which are consistently genera within the Lamiales (Sesamum, Salvia,
+Primulina, Olea, Henckelia), and are therefore counted as Viridiplantae. Reads
+originating from contamination are assigned to bacteria.
+
+The ratio of Viridiplantae to Bacteria among classified reads is reported per
+sample as a contamination index. Across the 18 samples this index is strongly
+associated with the alignment rate measured subsequently (Spearman rho = 0.942;
+Pearson r = 0.964 on log10-transformed ratios, n = 18), so it predicts alignment
+success from raw reads alone, before any alignment is performed.
+
+The contaminating taxa in the worst-affected samples are soil and rhizosphere
+organisms: Actinomycetes (Mycobacterium, Mycolicibacterium, Streptomyces,
+Nocardioides, Pseudonocardia) together with Bradyrhizobium, Sphingomonas and
+Methylobacterium, and the plant-pathogenic fungus Colletotrichum. This
+composition is consistent with soil carryover or a high epiphytic and endophytic
+load on field-collected tissue, rather than with a library-preparation or
+index-hopping artefact.
+
+--------------------------------------------------------------------------------
+4. ALIGNMENT AND DUPLICATE MARKING
+--------------------------------------------------------------------------------
+
+Trimmed reads were aligned to the Callicarpa americana reference assembly
+(Hamilton et al. 2020; 506,362,408 bp) with BWA-MEM v0.7.17-r1188, using -M to
+flag split hits as secondary and assigning per-sample read groups. Alignments
+were streamed directly into samtools v1.19.2 sort, so an unsorted BAM is never
+written. Duplicates were marked with GATK MarkDuplicates v4.6.2.0
+(--VALIDATION_STRINGENCY SILENT, --COMPRESSION_LEVEL 9). Alignment statistics
+were collected with samtools flagstat.
+
+Alignment is performed once, at full depth. Both depth-equalised datasets defined
+below are derived from these same duplicate-marked BAMs, so no sample is ever
+aligned more than once.
+
+--------------------------------------------------------------------------------
+5. COVERAGE ESTIMATION AND SAMPLE EXCLUSION
+--------------------------------------------------------------------------------
+
+Usable coverage was measured per sample from the duplicate-marked BAM as
+
+    usable depth = bases mapped (cigar) / 506,362,408
+
+where "bases mapped (cigar)" is reported by samtools stats and counts aligned
+bases only, so soft-clipped read ends do not inflate the estimate. Duplicate,
+secondary and supplementary alignments were excluded from the count (-F 0xD04)
+because none of them contributes independent evidence for genotyping. This
+quantity is therefore the mean depth of independent, aligned evidence available
+per site, and is the value against which the depth targets below are applied.
+
+Two datasets were defined, with minimum depth thresholds of 9x and 20x. A sample
+is included in a dataset only if its measured usable depth reaches that
+dataset's threshold. This is the sole exclusion criterion: no sample is removed
+on the basis of its contamination index, its taxonomic profile, or its alignment
+rate. Those measurements explain why a sample fails, but the decision itself
+rests on whether enough independent evidence remains to genotype the sample at
+the target depth. The rule is one-directional by necessity, since downsampling
+can remove reads but cannot create them.
+
+Applying this criterion to the coverage measured in the initial analysis, three
+samples (557 at 3.9x, 558 at 4.7x, 553 at 6.1x) fall below the 9x threshold and
+are excluded from both datasets; these are the same three samples with the lowest
+plant-to-bacteria ratios in the contamination screen. A further five samples
+(564, 563, 549, 555, 560) reach 9x but not 20x and so contribute to the 9x
+dataset only. On those figures the 9x dataset comprises 15 samples and the 20x
+dataset 10 samples. These counts are provisional: membership is recomputed from
+the coverage measured during the present run, and two samples (564 at 9.11x and
+563 at 9.19x) sit close enough to the 9x threshold that a small change in
+trimming yield could move them. The definitive membership table is written to
+results/metrics/depth_summary.tsv before any variant calling begins.
+
+--------------------------------------------------------------------------------
+6. DEPTH EQUALISATION
+--------------------------------------------------------------------------------
+
+Excluding low-coverage samples narrows the range of coverage but does not remove
+the depth gradient among those retained; at the 9x threshold the retained samples
+would still span roughly 9x to 73x. Each retained sample was therefore
+downsampled to its dataset's target depth. For sample i with measured usable
+depth d_i and dataset target T, the retained fraction is
+
+    f_i = min(1, T / d_i)
+
+Downsampling was performed on the duplicate-marked BAM with samtools view
+--subsample f_i --subsample-seed 42. This implementation hashes read names, so
+both mates of a pair are retained or discarded together and pairing is preserved.
+The fixed seed makes the operation reproducible. Samples already at or below the
+target (f_i >= 0.999) are passed through unchanged rather than resampled.
+
+After this step every sample within a dataset carries the same expected depth,
+and differences in genotype confidence between samples reflect genome content
+rather than sequencing effort. In validation on simulated data, four samples
+spanning 9.8x to 37.5x native depth converged to mean genotype depths of 8.70x,
+8.62x, 8.58x and 8.78x after equalisation at a 9x target, reducing a 3.8-fold
+spread to 1.02-fold.
+
+The cost is deliberate and substantial: the highest-coverage sample retains
+roughly 12% of its aligned reads in the 9x dataset. This is accepted because
+uniform depth across samples is required for the population-genetic comparisons
+the datasets are built to support.
+
+--------------------------------------------------------------------------------
+7. VARIANT CALLING AND JOINT GENOTYPING
+--------------------------------------------------------------------------------
+
+Both datasets were called independently and identically. Per-sample variants
+were called from the downsampled BAMs with GATK HaplotypeCaller v4.6.2.0 in GVCF
+mode (-ERC GVCF, --min-base-quality-score 20), which records genotype
+likelihoods at every position including monomorphic sites. Per-sample GVCFs were
+merged with GATK CombineGVCFs and genotyped jointly with GATK GenotypeGVCFs to
+produce a cohort-wide VCF. SNPs were extracted with GATK SelectVariants
+(-select-type SNP).
+
+--------------------------------------------------------------------------------
+8. VARIANT FILTERING
+--------------------------------------------------------------------------------
+
+Site-level hard filters were applied with GATK VariantFiltration, excluding
+variants with Quality by Depth (QD) < 2.0, Fisher Strand bias (FS) > 60.0, RMS
+Mapping Quality (MQ) < 40.0, Strand Odds Ratio (SOR) > 3.0, MQRankSum < -12.5,
+or ReadPosRankSum < -8.0. Only variants passing all filters were retained, using
+BCFtools v1.19.
+
+Population-level filters were applied with VCFtools v0.1.16, removing indels and
+retaining sites in Hardy-Weinberg equilibrium at p >= 0.01, with minor allele
+frequency >= 0.01 and no more than 20% missing genotypes (--max-missing 0.8).
+
+Mean site depth bounds were set relative to each dataset's target depth rather
+than as fixed constants, at half and three times the target:
+
+    9x dataset:   --min-meanDP  4   --max-meanDP  27
+    20x dataset:  --min-meanDP 10   --max-meanDP  60
+
+This scaling is required rather than cosmetic. The fixed lower bound of 20x used
+in the previous analysis would, applied to the 9x dataset, remove every site,
+because mean depth in that dataset is 9x by construction. The bounds retain sites
+with depth consistent with the equalised target while still excluding collapsed
+repeats and other regions of anomalously high coverage. All depth-independent
+filters are identical across the two datasets, so differences between them are
+attributable to depth and sample composition rather than to filtering.
+
+--------------------------------------------------------------------------------
+9. LINKAGE DISEQUILIBRIUM PRUNING AND MARKER SUBSETS
+--------------------------------------------------------------------------------
+
+To limit pseudoreplication in ordination and clustering analyses, the filtered
+SNP set of each dataset was pruned for linkage disequilibrium with PLINK
+v1.90b6.21 using a 50-SNP sliding window, a 10-SNP step and an r^2 threshold of
+0.2 (--indep-pairwise 50 10 0.2). From each pruned panel, random subsets of
+50,000 and 5,000 SNPs were drawn with a fixed random seed, balancing genome-wide
+representation against marker independence. Each dataset therefore yields a full
+filtered SNP set, an LD-pruned panel, and 50K and 5K subsets of that panel.
+
+--------------------------------------------------------------------------------
+10. INPUT PREPARATION FOR RUNS OF HOMOZYGOSITY ANALYSIS
+--------------------------------------------------------------------------------
+
+ROH inputs were prepared separately for each dataset from the full filtered SNP
+set, not from the LD-pruned panel. LD pruning removes precisely the correlated
+markers that ROH detection relies on to trace contiguous homozygous tracts, and
+the 5K and 50K subsets are far too sparse to resolve segment boundaries on a
+506 Mb genome.
+
+Biallelic SNPs were extracted with BCFtools (--min-alleles 2 --max-alleles 2
+--type snps), then filtered with VCFtools for call rate (--max-missing 0.9) and
+minor allele frequency at two thresholds, 0.05 and 0.10, run in parallel to allow
+a sensitivity assessment. Hardy-Weinberg filtering was deliberately omitted at
+this stage: inbred individuals systematically violate Hardy-Weinberg expectations
+at heterozygous loci, so applying such a filter before ROH detection would remove
+the signal the analysis is intended to measure. Filtered VCFs were converted to
+PLINK binary format with PLINK v2.0.0-a.6.9 (--allow-extra-chr --max-alleles 2
+--set-missing-var-ids '@:#' --new-id-max-allele-len 50).
+
+Downstream ROH detection and F_ROH estimation follow the three-length-class
+design (short >= 100 kb, medium >= 500 kb, long >= 1,500 kb) described separately.
+
+--------------------------------------------------------------------------------
+11. REPRODUCIBILITY AND COMPUTATIONAL NOTES
+--------------------------------------------------------------------------------
+
+All random operations use fixed seeds (downsampling seed 42; SNP subsetting seed
+42), so both datasets are reproducible from the trimmed reads. Every stage is
+checkpointed per sample and per dataset, and an interrupted run resumes without
+repeating completed work. Intermediate files are removed as soon as they are no
+longer required: sorted BAMs after duplicate marking, downsampled BAMs after
+their GVCF is written, duplicate-marked BAMs once both datasets have been derived
+from them, and the combined GVCF after joint genotyping. Per-sample GVCFs and all
+final VCFs are retained.
+
+--------------------------------------------------------------------------------
+12. SOFTWARE VERSIONS
+--------------------------------------------------------------------------------
+
+Tool           Version           Role
+-------------  ----------------  ---------------------------------------------
+FastQC         0.12.1            read quality assessment
+MultiQC        1.33              aggregate QC reporting
+fastp          1.0.1             adapter and quality trimming
+Kraken2        2.17.1            taxonomic contamination screening
+  database     k2_pluspfp_16_GB_20260626 (capped 16 GB PlusPFP index)
+seqkit         2.3.0             read subsampling for screening
+BWA-MEM        0.7.17-r1188      read alignment
+SAMtools       1.19.2            BAM sorting, indexing, statistics, subsampling
+GATK           4.6.2.0           duplicate marking, variant calling, filtering
+BCFtools       1.19              VCF manipulation and statistics
+VCFtools       0.1.16            population-level and call-rate filtering
+PLINK          1.90b6.21         LD pruning, ROH detection
+PLINK2         2.0.0-a.6.9       VCF to PLINK binary conversion
+GNU parallel   20231122          per-sample parallelisation
+
+Note on discrepancies with the previous version of this document: it recorded
+BWA-MEM 2.3, SAMtools 1.23, BCFtools 1.23 and VCFtools 0.1.17, and attributed LD
+pruning to PLINK 2. The versions above were read from the binaries that the
+pipeline actually invokes. The reference directory contains index files for both
+BWA and BWA-MEM2, but only BWA v0.7.17 is installed, and it is what the pipeline
+calls. LD pruning and ROH detection use PLINK 1.9, because --homozyg is not
+implemented in PLINK 2.
+
+Environments:
+  qc_illumina   FastQC, MultiQC, fastp, Kraken2
+  SNP_call      GATK, BCFtools, PLINK2, R
+  popgen_tools  PLINK 1.9, VCFtools
+  system        BWA, SAMtools, seqkit, GNU parallel
+
+--------------------------------------------------------------------------------
+13. ITEMS TO RESOLVE BEFORE SUBMISSION
+--------------------------------------------------------------------------------
+
+- Sample counts in section 5 are carried over from the previous analysis and must
+  be replaced with the values in results/metrics/depth_summary.tsv once the
+  present run completes.
+
+- The 14 bp 5' hard trim in section 2 discards 9.3% of all sequenced bases. Its
+  original justification should be re-checked against the per-base sequence
+  content plot in the new raw FastQC report, particularly because two samples sit
+  within 2% of the 9x inclusion threshold.
+
+- Confirm whether the three excluded samples (557, 558, 553) should be reported
+  as excluded, or re-sequenced. The contamination screen indicates their
+  libraries are predominantly soil bacteria, so additional sequencing of the
+  existing libraries would not improve the plant fraction.
+
+- Add the citation for the Kraken2 PlusPFP index release and the reference
+  genome accession.
