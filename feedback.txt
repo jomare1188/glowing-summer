@@ -159,4 +159,14 @@ D desviado.
 [23 sep 2026 - Jorge] Los all-sites VCF (punto 2) ya estan generados pero SIN
 mascaras; se retiraron del Drive y no se entregan hasta aplicar las mascaras.
 Estado del punto 1: realineando las 18 muestras (BAMs nativos, tambien sirven para el
-punto 4); mapeabilidad GenMap k=100 e=2 corriendo.
+punto 4).
+
+[23 sep 2026 - Jorge] Mascara de mapeabilidad LISTA: snp_calling/results/masks/mask_lowmap.bed
+(GenMap k=100 -e 2, se excluye mapeabilidad < 1). Cubre 133.4 Mb (26.35% del genoma),
+pero solo contiene 14% de los SNPs finales (273K de 1.95M en d09; 266K de 2.00M en d20).
+En Chr17 (set PASS, antes de --hwe) las regiones de baja mapeabilidad tienen el doble
+de sitios con todas las muestras heterocigotas (3.3% vs 1.7%), pero la mayoria de esos
+sitios (~7,200 de ~8,200) estan en regiones que GenMap considera UNICAS. Es lo esperado
+para paralogos colapsados: la segunda copia no esta en la referencia. Por eso la
+mapeabilidad sola no basta; las mascaras de profundidad y de heterocigosidad son las
+que deben capturar la mayor parte.
