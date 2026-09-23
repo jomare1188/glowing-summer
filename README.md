@@ -132,6 +132,17 @@ bash snp_calling/monitor_datasets.sh -w        # watch mode, refreshes every 30 
 
 Read-only; safe to run against a live pipeline.
 
+### 4. All-sites VCFs (variant + invariant)
+
+```bash
+cd snp_calling
+bash generate_all_vcf.sh [d09|d20|all]                     # default: all
+TEST_INTERVAL=Chr17:1-2000000 bash generate_all_vcf.sh d20  # quick test region
+```
+
+Standalone; `snp_datasets.sh` is not modified. It re-genotypes the retained
+per-sample GVCFs, so it needs no BAMs. See [All-sites VCFs](#all-sites-vcfs-for-diversity-and-heterozygosity).
+
 ### Storage behaviour
 
 Intermediates are deleted as soon as they are consumed. Sorted BAMs are removed
@@ -240,6 +251,33 @@ Then VCFtools population filters:
 PLINK 1.9 `--indep-pairwise 50 10 0.2`, then random draws of 50,000 and 5,000
 SNPs from the pruned panel (fixed seed, header preserved, re-sorted so the
 output stays tabix-indexable).
+
+### All-sites VCFs for diversity and heterozygosity
+
+π and per-individual heterozygosity need the invariant sites as the
+denominator. A SNP-only VCF loses them and inflates both statistics.
+`generate_all_vcf.sh` builds one all-sites VCF per dataset:
+
+```
+per-sample GVCFs (results/<tag>/gvcf/)
+    ↓ CombineGVCFs → GenotypeGVCFs --include-non-variant-sites
+    │   (parallel by interval: Chr01–Chr17 + one job for all scaffolds)
+    ├─→ invariant sites (ALT = ".")
+    └─→ SNPs → same GATK hard filters as above → PASS
+    ↓ SAME filters on both parts:
+    │   --remove-indels --max-missing 0.8 --min/max-meanDP (d09 4–27, d20 10–60)
+    ↓ merge, sort
+results/<tag>/allsites/cohort.allsites.final.vcf.gz
+```
+
+**No MAF, no HWE and no LD pruning are applied.** They would remove real rare
+variants and real heterozygotes, which is exactly what these statistics
+measure. GATK hard filters apply to SNPs only, because invariant sites carry no
+QD/FS/MQ annotations. Chromosome names stay as `Chr01…`. Every SNP in
+`cohort.snps.final.vcf.gz` is also present in the all-sites VCF; there are
+more SNPs in total because MAF/HWE are not applied. The unfiltered joint call
+is kept at `results/<tag>/allsites/raw/cohort.allsites.raw.vcf.gz`, and
+per-interval counts are in `allsites_summary.tsv`.
 
 ### ROH input preparation
 
