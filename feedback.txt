@@ -1,0 +1,145 @@
+CALLICARPA AMPLA - PENDIENTES DE DATOS Y ANALISIS
+Tatiana Arias / Jorge Muñoz-Pérez
+Creado: 23 septiembre 2026
+Repositorio: https://github.com/jomare1188/glowing-summer
+
+
+Como usar este archivo: cuando algo este listo, cambiar [ ] por [x] y anotar la ruta del archivo o el commit.
+
+
+
+
+==================================================
+1. MASCARAS DE PARALOGOS  (prioridad 1)
+==================================================
+
+
+[ ] ExcessHet de GATK por sitio, calculado con los datos a profundidad completa
+[ ] Mascara de profundidad maxima (sitios con cobertura anormalmente alta = repeticiones colapsadas)
+[ ] Mascara de mapeabilidad sobre la referencia de C. americana
+
+
+Entregar como archivos BED para aplicarlos igual a todos los datasets (d09, d20, pruned, all-sites).
+
+
+Por que: los dos paneles (9x y 20x) muestran exceso de heterocigotos en todo el genoma, deficit de homocigotos alternativos y Fis por sitio muy negativo. No es un efecto de profundidad porque aparece tambien a 20x. Lo mas probable es que sean paralogos colapsados sumados al mapeo de C. ampla contra C. americana. El filtro --hwe 0.01 no los elimina porque con n = 9-13 casi no tiene poder. Esto afecta Ho, He, Fis, ROH y parentesco.
+
+
+
+
+==================================================
+2. ALL-SITES VCF (variantes + invariantes)
+==================================================
+
+
+[ ] d20: results/d20/allsites/cohort.allsites.final.vcf.gz
+[ ] d09: results/d09/allsites/cohort.allsites.final.vcf.gz
+[ ] allsites_summary.tsv de cada uno
+
+
+Se usan para heterocigosidad individual y como base del ROH. Las mascaras del punto 1 deben aplicarse a estos archivos.
+
+
+
+
+==================================================
+3. VCF ANTES DE PLINK (con FORMAT/DP y FORMAT/GQ)
+==================================================
+
+
+[ ] d20: cohort.snps.final.vcf.gz (o el PASS antes de los filtros poblacionales)
+[ ] d09: lo mismo
+
+
+Los paneles que tengo los escribio PLINK y solo traen GT. Sin DP ni GQ no puedo revisar la calidad por genotipo.
+
+
+
+
+==================================================
+4. BAMs
+==================================================
+
+
+[ ] BAMs a profundidad nativa (sin submuestrear) de todas las muestras con lecturas, incluidas 553, 557, 558, 563 y 564
+    (o permiso para correr ANGSD / NgsRelate en el servidor)
+
+
+Por que: la clonalidad se va a hacer con verosimilitudes de genotipo (ANGSD -doIBS / NgsRelate) y no con genotipos llamados. P1FS (549) es un esqueje de un arbol de Sonadora, y sus posibles arboles de origen (FS830, FS834s8, FS835s7) quedaron fuera de los dos paneles por baja profundidad. Solo con los BAMs se puede responder esa pregunta. 563 y 564 son el control positivo: son duplicados conocidos de 562 y 561.
+
+
+
+
+==================================================
+5. REPETIR EL ROH
+==================================================
+
+
+Lo que esta bien: usa el set denso de SNPs (no los paneles podados), revisa la densidad de marcadores, usa las tres clases de longitud y compara d09 con d20. Esa comparacion detecto el sesgo por profundidad (F_ROH corto 1.95 veces mayor a 9x).
+
+
+Lo que hay que corregir:
+
+
+a) Hay filtro HWE aunque el README dice que no. La entrada del ROH sale de cohort.snps.final.vcf.gz, que ya paso por --hwe 0.01 en el paso de filtros poblacionales. El texto de metodos no coincide con lo que se corrio.
+
+
+b) Falta la mascara de paralogos. Los heterocigotos falsos cortan tramos homocigotos reales, asi que F_ROH queda subestimado. El resultado que mas se afecta es "no hay ROH largos, no hay endogamia reciente", que es justo el que usamos en el paper.
+
+
+c) El filtro MAF (0.05 / 0.10) no sirve con 9 individuos (18 alelos). Con 0.05 casi no quita nada y con 0.10 solo quita singletons. Para ROH lo normal es no filtrar por MAF.
+
+
+d) F_ROH se divide por el genoma completo (506,362,408 pb), incluidas regiones sin SNPs llamables. Eso baja todos los valores. Debe dividirse por la longitud del genoma cubierta por SNPs.
+
+
+Como repetirlo:
+
+
+[ ] 1. Partir del all-sites VCF de d20 (ya viene sin MAF y sin HWE) y quedarse solo con SNPs bialelicos
+[ ] 2. Aplicar las mascaras de paralogos (punto 1)
+[ ] 3. Filtrar datos faltantes al 90% (--max-missing 0.9), como antes
+[ ] 4. PLINK 1.9 --homozyg con las mismas tres clases (corto, medio, largo), sin paso de MAF
+[ ] 5. Calcular F_ROH sobre la longitud callable del genoma, no sobre 506 Mb
+[ ] 6. Repetir en d09 solo para ordenar los 4 individuos extra; los valores absolutos se reportan con d20
+[ ] 7. Corregir el README para que diga exactamente que filtros se aplicaron
+
+
+
+
+==================================================
+6. OTROS PEDIDOS
+==================================================
+
+
+[ ] Paneles podados completos: d09 (160,242 SNPs) y d20 (119,111 SNPs). Son mejores que los de 5K/50K para PCA, parentesco y captura alelica.
+[ ] Un segundo submuestreo independiente a 20x de 2-3 librerias, con semilla distinta de 42. Sirve de linea base de replica para el umbral de clonalidad.
+[ ] LMM-Large (562) llego a 19.63x. Si el objetivo fuera 18x o 19x entraria al dataset profundo. Revisar que otras muestras entrarian con ese corte.
+
+
+
+
+==================================================
+7. QUE DATASET VA CON CADA ANALISIS
+==================================================
+
+
+Todos llevan las mascaras de paralogos.
+
+
+Clonalidad             -> BAMs a profundidad nativa, ANGSD / NgsRelate, todos los arboles + 563/564 como control positivo. Chequeo secundario con genotipos llamados de d20.
+Heterocigosidad (Ho,F) -> all-sites VCF d20 (valores absolutos, 9 arboles). d09 all-sites solo para ordenar los 4 extra.
+ROH                    -> SNPs del all-sites VCF d20 (ver punto 5). d09 solo para ordenar.
+Parentesco (GRM)       -> d09 podado completo (160K), 13 arboles, revisado contra d20.
+PCA                    -> d09 podado (50K o 160K), revisado contra d20. Se puede correr ya.
+Captura alelica        -> d09 podado completo (160K), alelos vistos al menos dos veces (MAC >= 2). Indicar que faltan 3 arboles de Sonadora.
+
+
+
+
+==================================================
+NOTAS / RESPUESTAS
+==================================================
+
+
+(escribir aqui)

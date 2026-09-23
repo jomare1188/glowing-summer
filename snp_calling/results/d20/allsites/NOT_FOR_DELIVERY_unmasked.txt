@@ -1,0 +1,4 @@
+All-sites VCF in this directory is UNMASKED (no paralog masks applied).
+Superseded for delivery by feedback.txt (23 Sep 2026), step 1 + step 2:
+the paralog masks (results/masks/) must be applied before it is sent.
+Kept only as the input for step 2. Built by snp_calling/generate_all_vcf.sh.
