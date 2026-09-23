@@ -81,6 +81,7 @@
 *.vcf
 *.vcf.gz
 *.vcf.gz.tbi
+*.vcf.gz.csi
 *.g.vcf.gz
 *.bed
 *.bim
@@ -92,6 +93,13 @@ snp_calling/results/*/gvcf/
 snp_calling/results/*/raw/
 snp_calling/results/*/bam/
 snp_calling/results/variants/
+
+# generate_all_vcf.sh: all-sites VCFs are 3.5-4 GB (final) and 6-7 GB (raw)
+# per dataset. Only allsites_summary.tsv and intervals.tsv are tracked; the
+# per-interval pieces/ (working files + per-interval counts) stay out.
+snp_calling/results/*/allsites/raw/
+snp_calling/results/*/allsites/pieces/
+snp_calling/results/*/allsites_test/
 
 # MultiQC side-car data directories (17-25 MB of JSON/parquet per report).
 *_multiqc_report_data/
