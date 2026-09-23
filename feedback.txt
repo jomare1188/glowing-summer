@@ -143,3 +143,20 @@ NOTAS / RESPUESTAS
 
 
 (escribir aqui)
+
+[23 sep 2026 - Jorge] Punto 1, ExcessHet: el umbral 54.69 (default de GATK) es
+inalcanzable con este numero de muestras. ExcessHet tiene un techo que depende de n:
+aun si TODAS las muestras son heterocigotas, el maximo es 19.8 con 9 muestras, 31.0
+con 13 y 45.4 con 18. Verificado en los datos: en Chr17 hay 0 sitios > 54.69, pero
+~14,000 sitios de d09 estan en el techo de 31.0 (las 13 muestras heterocigotas); esa
+es justamente la senal de paralogos. Propuesta: calcular por sitio ExcessHet, H
+(fraccion de heterocigotos) y D (desbalance alelico en heterocigotos, estilo HDplot)
+con llamadas a profundidad nativa de las 13 muestras de d09 (se excluyen 563/564 por
+ser duplicados y 553/557/558 por profundidad 3-4x), y elegir umbrales juntos mirando
+los graficos. Punto de partida: ExcessHet >= 20 (p < 0.01 con n = 13) o H >= 0.8 con
+D desviado.
+
+[23 sep 2026 - Jorge] Los all-sites VCF (punto 2) ya estan generados pero SIN
+mascaras; se retiraron del Drive y no se entregan hasta aplicar las mascaras.
+Estado del punto 1: realineando las 18 muestras (BAMs nativos, tambien sirven para el
+punto 4); mapeabilidad GenMap k=100 e=2 corriendo.
