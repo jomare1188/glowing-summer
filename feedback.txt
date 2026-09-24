@@ -181,3 +181,15 @@ Prueba en Chr17:1-2,000,000 con las 13 muestras a profundidad nativa: 1,112 siti
 las 13 heterocigotas (ExcessHet = 31.0), contra 458 en el mismo tramo a 9x. A
 profundidad completa la senal de paralogos es mas del doble de fuerte, como se esperaba
 (a 9x se pierden heterocigotos).
+
+[24 sep 2026 - Jorge] Mascara de profundidad maxima LISTA: snp_calling/results/masks/mask_highdepth.bed
+(mosdepth sobre los 13 BAMs nativos de d09, mismas lecturas que la profundidad util;
+se excluye una posicion si >= 7 de 13 muestras superan 2x su mediana de profundidad en
+bases cubiertas; cortes por muestra en results/masks/depth/cutoffs.tsv).
+Cubre 41.4 Mb (8.18% del genoma) pero contiene 53% de los SNPs finales
+(1.03M de 1.95M en d09; 1.07M de 2.00M en d20). En Chr17 (set PASS, antes de --hwe),
+7,679 de los 8,044 sitios con todas las muestras heterocigotas (95%) caen en esta
+mascara: 10.2% de los SNPs dentro son "todos heterocigotos" contra 0.1% fuera. Esto
+apoya la hipotesis de paralogos colapsados: generan muchos SNPs falsos concentrados en
+regiones con el doble de cobertura. Ojo: los analisis anteriores (Ho, Fis, ROH,
+parentesco) usaron un set donde la mitad de los SNPs viene de estas regiones.
