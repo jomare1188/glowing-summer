@@ -170,3 +170,14 @@ sitios (~7,200 de ~8,200) estan en regiones que GenMap considera UNICAS. Es lo e
 para paralogos colapsados: la segunda copia no esta en la referencia. Por eso la
 mapeabilidad sola no basta; las mascaras de profundidad y de heterocigosidad son las
 que deben capturar la mayor parte.
+
+[24 sep 2026 - Jorge] BAMs a profundidad nativa LISTOS (sirven para punto 1 y punto 4):
+snp_calling/results/native/bam/<muestra>.markdup.bam + .bam.bai, las 18 muestras
+(incluidas 553, 557, 558, 563, 564). 566 GB en total; samtools quickcheck OK.
+Profundidad util identica a la de depth_summary.tsv en las 18 (diferencia 0.0000):
+snp_calling/results/native/metrics/depth_native_vs_v2.tsv. Script: snp_calling/native_depth.sh.
+Falta decidir como transferirlos (566 GB) o si Tatiana corre ANGSD/NgsRelate en el servidor.
+Prueba en Chr17:1-2,000,000 con las 13 muestras a profundidad nativa: 1,112 sitios con
+las 13 heterocigotas (ExcessHet = 31.0), contra 458 en el mismo tramo a 9x. A
+profundidad completa la senal de paralogos es mas del doble de fuerte, como se esperaba
+(a 9x se pierden heterocigotos).
