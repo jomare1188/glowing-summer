@@ -193,3 +193,26 @@ mascara: 10.2% de los SNPs dentro son "todos heterocigotos" contra 0.1% fuera. E
 apoya la hipotesis de paralogos colapsados: generan muchos SNPs falsos concentrados en
 regiones con el doble de cobertura. Ojo: los analisis anteriores (Ho, Fis, ROH,
 parentesco) usaron un set donde la mitad de los SNPs viene de estas regiones.
+
+[25 sep 2026 - Jorge] Llamado a profundidad nativa LISTO (13 muestras de d09):
+snp_calling/results/native/raw/native13.raw.vcf.gz (19.5 M variantes; 16.5 M SNPs
+bialelicos; FORMAT con AD/DP/GQ). Estadisticas por sitio (ExcessHet, H, D):
+results/masks/paralog/paralog_site_stats.tsv.gz; graficos: paralog_diagnostics.png/.pdf.
+- H muestra un pico enorme en H = 1 (~590 K SNPs con las 13 heterocigotas) y exceso en
+  0.9: imposible en una poblacion real de 13 individuos.
+- D (desbalance alelico, HDplot) NO separa bien aqui: con 30-60x sumados en 13 muestras
+  la escala z se infla y los sitios normales llegan a +-50, asi que el corte +-7 (pensado
+  para RAD de baja profundidad) no aplica. Ademas, un par de paralogos colapsados con
+  diferencias fijas da proporcion ~0.5, igual que un heterocigoto normal. Propongo
+  usar solo ExcessHet (y/o H), no D.
+- Las mascaras de mapeabilidad + profundidad ya quitan 89% de los sitios "todos
+  heterocigotos" (457 K de 515 K). Lo que queda fuera de esas mascaras
+  (results/masks/paralog/residual_signal_after_map_depth.tsv):
+      10.71 M SNPs; ExcessHet >= 31: 57 K (0.5%); >= 20: 147 K (1.4%); >= 13: 232 K
+  Bajo HWE real, "13 de 13 heterocigotas" deberia ser muy por debajo de 0.1%, asi que
+  el resto sigue enriquecido: la mascara de paralogos es para este residuo.
+DECISION PENDIENTE (Tatiana + Jorge), umbral de la mascara de sitios:
+  A) ExcessHet >= 20 (p < 0.01 con n = 13): 147 K sitios extra; incluye ~1% de sitios
+     que fallarian por azar bajo HWE (falsos positivos esperables).
+  B) ExcessHet >= 31 (todas heterocigotas, el techo): 57 K sitios; mas conservador.
+  Y si se enmascara solo el sitio o tambien una ventana alrededor (paralogos son regiones).

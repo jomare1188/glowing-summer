@@ -1,0 +1,3 @@
+region	biallelic_snps	excesshet_ge_31	excesshet_ge_20	excesshet_ge_13	H_ge_0.8
+outside_lowmap_and_highdepth	10711492	57446	147327	231555	307609
+inside_lowmap_or_highdepth	5812308	457416	735547	951808	1061960

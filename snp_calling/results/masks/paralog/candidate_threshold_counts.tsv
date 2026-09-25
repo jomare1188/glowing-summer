@@ -1,0 +1,7 @@
+biallelic_snps	16523800
+excesshet_ge_31(all_het)	514862
+excesshet_ge_20(p<0.01)	882874
+excesshet_ge_13(p<0.05)	1183363
+H_ge_0.8	1369569
+H_ge_0.6	2297422
+H_ge_0.8_and_absD_gt_7	669790
