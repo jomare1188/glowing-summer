@@ -14,9 +14,13 @@ Como usar este archivo: cuando algo este listo, cambiar [ ] por [x] y anotar la 
 ==================================================
 
 
-[ ] ExcessHet de GATK por sitio, calculado con los datos a profundidad completa
-[ ] Mascara de profundidad maxima (sitios con cobertura anormalmente alta = repeticiones colapsadas)
-[ ] Mascara de mapeabilidad sobre la referencia de C. americana
+[x] ExcessHet de GATK por sitio, calculado con los datos a profundidad completa
+    -> snp_calling/results/masks/mask_paralog_sites.bed (ExcessHet >= 20, 13 muestras nativas)
+[x] Mascara de profundidad maxima (sitios con cobertura anormalmente alta = repeticiones colapsadas)
+    -> snp_calling/results/masks/mask_highdepth.bed
+[x] Mascara de mapeabilidad sobre la referencia de C. americana
+    -> snp_calling/results/masks/mask_lowmap.bed
+    UNION (usar esta): snp_calling/results/masks/mask_paralog_union.bed ; complemento: keep_sites.bed
 
 
 Entregar como archivos BED para aplicarlos igual a todos los datasets (d09, d20, pruned, all-sites).
@@ -216,3 +220,12 @@ DECISION PENDIENTE (Tatiana + Jorge), umbral de la mascara de sitios:
      que fallarian por azar bajo HWE (falsos positivos esperables).
   B) ExcessHet >= 31 (todas heterocigotas, el techo): 57 K sitios; mas conservador.
   Y si se enmascara solo el sitio o tambien una ventana alrededor (paralogos son regiones).
+
+[25 sep 2026 - Jorge] PUNTO 1 LISTO. Umbral elegido: ExcessHet >= 20 (opcion A), solo el sitio.
+Union de las 3 mascaras: 162.3 Mb (32.1% del genoma). Resumen: results/masks/masks_summary.tsv
+SNPs finales que quedan: d09 776,508 de 1,952,554; d20 747,709 de 2,004,660.
+Efecto (results/masks/fis_before_after.tsv), Fis medio por sitio:
+  d09: -0.169 -> -0.010   (Ho 0.347 -> 0.235)
+  d20: -0.426 -> -0.162   (Ho 0.551 -> 0.349)
+d09 queda practicamente en 0. d20 mejora mucho pero sigue negativo: revisar (n = 9; parte
+es sesgo del estimador con n pequeno, pero no todo).
