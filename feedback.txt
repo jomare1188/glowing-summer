@@ -148,84 +148,42 @@ NOTAS / RESPUESTAS
 
 (escribir aqui)
 
-[23 sep 2026 - Jorge] Punto 1, ExcessHet: el umbral 54.69 (default de GATK) es
-inalcanzable con este numero de muestras. ExcessHet tiene un techo que depende de n:
-aun si TODAS las muestras son heterocigotas, el maximo es 19.8 con 9 muestras, 31.0
-con 13 y 45.4 con 18. Verificado en los datos: en Chr17 hay 0 sitios > 54.69, pero
-~14,000 sitios de d09 estan en el techo de 31.0 (las 13 muestras heterocigotas); esa
-es justamente la senal de paralogos. Propuesta: calcular por sitio ExcessHet, H
-(fraccion de heterocigotos) y D (desbalance alelico en heterocigotos, estilo HDplot)
-con llamadas a profundidad nativa de las 13 muestras de d09 (se excluyen 563/564 por
-ser duplicados y 553/557/558 por profundidad 3-4x), y elegir umbrales juntos mirando
-los graficos. Punto de partida: ExcessHet >= 20 (p < 0.01 con n = 13) o H >= 0.8 con
-D desviado.
+[25 sep 2026 - Jorge] PASO 1: MASCARAS DE PARALOGOS - RESUMEN
 
-[23 sep 2026 - Jorge] Los all-sites VCF (punto 2) ya estan generados pero SIN
-mascaras; se retiraron del Drive y no se entregan hasta aplicar las mascaras.
-Estado del punto 1: realineando las 18 muestras (BAMs nativos, tambien sirven para el
-punto 4).
+Problema: los dos datasets tenian exceso de heterocigotos (Fis muy por debajo de 0),
+probablemente por paralogos colapsados.
 
-[23 sep 2026 - Jorge] Mascara de mapeabilidad LISTA: snp_calling/results/masks/mask_lowmap.bed
-(GenMap k=100 -e 2, se excluye mapeabilidad < 1). Cubre 133.4 Mb (26.35% del genoma),
-pero solo contiene 14% de los SNPs finales (273K de 1.95M en d09; 266K de 2.00M en d20).
-En Chr17 (set PASS, antes de --hwe) las regiones de baja mapeabilidad tienen el doble
-de sitios con todas las muestras heterocigotas (3.3% vs 1.7%), pero la mayoria de esos
-sitios (~7,200 de ~8,200) estan en regiones que GenMap considera UNICAS. Es lo esperado
-para paralogos colapsados: la segunda copia no esta en la referencia. Por eso la
-mapeabilidad sola no basta; las mascaras de profundidad y de heterocigosidad son las
-que deben capturar la mayor parte.
+Mascaras (snp_calling/results/masks/; todas son BED de EXCLUSION, nombres Chr01...):
+  mask_lowmap.bed          GenMap k=100 e=2, mapeabilidad < 1              26.4% del genoma
+  mask_highdepth.bed       >= 7 de 13 muestras con > 2x su mediana         8.2%
+  mask_paralog_sites.bed   ExcessHet >= 20 (llamado a profundidad nativa)  0.2%
+  mask_paralog_union.bed   las tres juntas  <- USAR ESTA                   32.1%
 
-[24 sep 2026 - Jorge] BAMs a profundidad nativa LISTOS (sirven para punto 1 y punto 4):
-snp_calling/results/native/bam/<muestra>.markdup.bam + .bam.bai, las 18 muestras
-(incluidas 553, 557, 558, 563, 564). 566 GB en total; samtools quickcheck OK.
-Profundidad util identica a la de depth_summary.tsv en las 18 (diferencia 0.0000):
-snp_calling/results/native/metrics/depth_native_vs_v2.tsv. Script: snp_calling/native_depth.sh.
-Falta decidir como transferirlos (566 GB) o si Tatiana corre ANGSD/NgsRelate en el servidor.
-Prueba en Chr17:1-2,000,000 con las 13 muestras a profundidad nativa: 1,112 sitios con
-las 13 heterocigotas (ExcessHet = 31.0), contra 458 en el mismo tramo a 9x. A
-profundidad completa la senal de paralogos es mas del doble de fuerte, como se esperaba
-(a 9x se pierden heterocigotos).
+Grafico de diagnostico:
+  https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/paralog/paralog_diagnostics.png  (tambien .pdf)
+  - Panel izquierdo (HDplot, D vs H): D no separa paralogos a esta profundidad; no se uso.
+  - Panel central (histograma de H): pico enorme en H = 1, ~590 K SNPs con las 13
+    muestras heterocigotas = senal de paralogos.
+  - Panel derecho (histograma de ExcessHet): pico en el techo de 31. Con 13 muestras
+    el umbral 54.69 es inalcanzable; por eso el umbral es 20 (p < 0.01).
 
-[24 sep 2026 - Jorge] Mascara de profundidad maxima LISTA: snp_calling/results/masks/mask_highdepth.bed
-(mosdepth sobre los 13 BAMs nativos de d09, mismas lecturas que la profundidad util;
-se excluye una posicion si >= 7 de 13 muestras superan 2x su mediana de profundidad en
-bases cubiertas; cortes por muestra en results/masks/depth/cutoffs.tsv).
-Cubre 41.4 Mb (8.18% del genoma) pero contiene 53% de los SNPs finales
-(1.03M de 1.95M en d09; 1.07M de 2.00M en d20). En Chr17 (set PASS, antes de --hwe),
-7,679 de los 8,044 sitios con todas las muestras heterocigotas (95%) caen en esta
-mascara: 10.2% de los SNPs dentro son "todos heterocigotos" contra 0.1% fuera. Esto
-apoya la hipotesis de paralogos colapsados: generan muchos SNPs falsos concentrados en
-regiones con el doble de cobertura. Ojo: los analisis anteriores (Ho, Fis, ROH,
-parentesco) usaron un set donde la mitad de los SNPs viene de estas regiones.
+Hallazgos:
+  - La mascara de profundidad contiene 95% de los sitios "todos heterocigotos".
+  - Enmascarar quita ~60% de los SNPs: quedan 777 K en d09 y 748 K en d20.
+  - Fis medio por sitio: d09 -0.17 -> -0.01 (resuelto); d20 -0.43 -> -0.16 (mejora,
+    falta revisar).
 
-[25 sep 2026 - Jorge] Llamado a profundidad nativa LISTO (13 muestras de d09):
-snp_calling/results/native/raw/native13.raw.vcf.gz (19.5 M variantes; 16.5 M SNPs
-bialelicos; FORMAT con AD/DP/GQ). Estadisticas por sitio (ExcessHet, H, D):
-results/masks/paralog/paralog_site_stats.tsv.gz; graficos: paralog_diagnostics.png/.pdf.
-- H muestra un pico enorme en H = 1 (~590 K SNPs con las 13 heterocigotas) y exceso en
-  0.9: imposible en una poblacion real de 13 individuos.
-- D (desbalance alelico, HDplot) NO separa bien aqui: con 30-60x sumados en 13 muestras
-  la escala z se infla y los sitios normales llegan a +-50, asi que el corte +-7 (pensado
-  para RAD de baja profundidad) no aplica. Ademas, un par de paralogos colapsados con
-  diferencias fijas da proporcion ~0.5, igual que un heterocigoto normal. Propongo
-  usar solo ExcessHet (y/o H), no D.
-- Las mascaras de mapeabilidad + profundidad ya quitan 89% de los sitios "todos
-  heterocigotos" (457 K de 515 K). Lo que queda fuera de esas mascaras
-  (results/masks/paralog/residual_signal_after_map_depth.tsv):
-      10.71 M SNPs; ExcessHet >= 31: 57 K (0.5%); >= 20: 147 K (1.4%); >= 13: 232 K
-  Bajo HWE real, "13 de 13 heterocigotas" deberia ser muy por debajo de 0.1%, asi que
-  el resto sigue enriquecido: la mascara de paralogos es para este residuo.
-DECISION PENDIENTE (Tatiana + Jorge), umbral de la mascara de sitios:
-  A) ExcessHet >= 20 (p < 0.01 con n = 13): 147 K sitios extra; incluye ~1% de sitios
-     que fallarian por azar bajo HWE (falsos positivos esperables).
-  B) ExcessHet >= 31 (todas heterocigotas, el techo): 57 K sitios; mas conservador.
-  Y si se enmascara solo el sitio o tambien una ventana alrededor (paralogos son regiones).
+Tablas: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/masks_summary.tsv
+        https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/fis_before_after.tsv
 
-[25 sep 2026 - Jorge] PUNTO 1 LISTO. Umbral elegido: ExcessHet >= 20 (opcion A), solo el sitio.
-Union de las 3 mascaras: 162.3 Mb (32.1% del genoma). Resumen: results/masks/masks_summary.tsv
-SNPs finales que quedan: d09 776,508 de 1,952,554; d20 747,709 de 2,004,660.
-Efecto (results/masks/fis_before_after.tsv), Fis medio por sitio:
-  d09: -0.169 -> -0.010   (Ho 0.347 -> 0.235)
-  d20: -0.426 -> -0.162   (Ho 0.551 -> 0.349)
-d09 queda practicamente en 0. d20 mejora mucho pero sigue negativo: revisar (n = 9; parte
-es sesgo del estimador con n pequeno, pero no todo).
+Archivos a entregar en este paso (no estan en GitHub por tamano; se envian aparte):
+  archivo                   tamano     comprimido (.gz)
+  mask_paralog_union.bed    44.0 MB    11.3 MB   <- la principal
+  keep_sites.bed            44.0 MB    11.4 MB   (complemento: sitios a conservar)
+  mask_lowmap.bed           26.3 MB     7.2 MB
+  mask_highdepth.bed        20.0 MB     4.9 MB
+  mask_paralog_sites.bed    19.1 MB     4.1 MB
+  Total                    153.4 MB    38.9 MB
+
+Tambien listos para el punto 4: BAMs nativos de las 18 muestras,
+snp_calling/results/native/bam/ (566 GB; falta definir como transferirlos).
