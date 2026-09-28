@@ -187,3 +187,59 @@ Archivos a entregar en este paso (no estan en GitHub por tamano; se envian apart
 
 Tambien listos para el punto 4: BAMs nativos de las 18 muestras,
 snp_calling/results/native/bam/ (566 GB; falta definir como transferirlos).
+
+## 28 SEPT 2026
+
+[2:18 p. m., 28/9/2026] Tatiana USA: bueno mira: After the mask, d20 still has too many heterozygotes (Fis −0.16, when it should be close to −0.06). Jorge needs to find out why:
+
+•	Plot again how many samples are heterozygous at each SNP, on masked d20. If many SNPs still have all samples heterozygous, the mask is not removing enough.
+
+•	Calculate observed heterozygosity per sample on masked d20. If one or two trees are much higher than the rest, those trees are the problem.
+
+•	If there is still excess, make the mask stricter and check again.
+
+Nothing else should be done until this is settled, because every file below uses the mask.
+[2:21 p. m., 28/9/2026] Tatiana USA: este es el problema mira The −0.16 means d20 still has more heterozygotes than expected. There are three possible reasons, and the two checks tell them apart.
+
+1. Paralogs the mask missed. This is the most likely. Two copies of a gene get collapsed onto one place in the C. americana reference, so every tree looks heterozygous there. The first check detects this: if many SNPs still show all 9 trees heterozygous, paralogs remain and the mask needs to be stricter.
+
+2. A problem with one or two samples, for example contamination or DNA mixed from two plants. A contaminated sample looks heterozygous almost everywhere. The second check detects this: that tree's Ho would stand far above the others. The fix is to remove or re-examine that sample, not to change the mask.
+
+3. Real biology. In a very small population with few parents, a mild excess of heterozygotes is expected, and seedlings from the same mother (like the PV trees) add a bit more. If the two checks come out clean, meaning no spike of all-heterozygous SNPs and no outlier tree, then part of the −0.16 is probably real. You can report it as a result instead of treating it as an error.
+
+The reason −0.06 is the reference point: with only 9 trees, Fis comes out slightly negative even when nothing is wrong, just from small sample size. Anything well below that needs an explanation, and these checks give one.
+
+[28 sep 2026 - Jorge] RESPUESTA A LAS PRUEBAS (d20 enmascarado)
+
+1. Espectro de heterocigotos por SNP -> QUEDAN PARALOGOS.
+   SNPs con los 9 arboles heterocigotos: 9,782 observados vs 179 esperados bajo HWE (55x);
+   8 de 9: 12x. Igual a profundidad completa (67x), asi que no es por profundidad.
+   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/het_spectrum_d20_masked.png
+
+2. Ho por arbol -> NO hay un arbol atipico.
+   Hay dos grupos: 554, 556 y 559 tienen Ho alto (F -0.42 a -0.55); los otros 6 no.
+   Pero sin esos 3 arboles el Fis no mejora (-0.169) y el pico de "todos heterocigotos"
+   sigue, asi que ellos NO son la causa. Sus heterocigotos no estan mas sesgados que los
+   de los demas (no parece mezcla de ADN). Su Ho alto puede ser real: ayudaria tener los
+   metadatos (arbol, localidad, madre, lote de libreria).
+   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/per_sample_d20_masked.png
+   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/allele_balance_d20_masked.png
+
+3. Mascara mas estricta -> probadas 6 opciones sobre la mascara actual:
+   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/mask_candidates.tsv
+   opcion          genoma enmascarado   SNPs d20   9/9 het (obs/esp)   Fis corregido*
+   actual          32%                  748K       55x                 -0.161
+   win1kb          44%                  376K       14x                 -0.013
+   win1kb + h75    44%                  359K       4x                  +0.026
+   (win1kb = extender 1 kb a cada lado de los sitios con ExcessHet >= 20;
+    h75 = quitar SNPs con >= 75% de arboles heterocigotos)
+   Recomendacion: win1kb. Lleva el Fis a ~0 sin usar la heterocigosidad misma para
+   filtrar (no es circular). Costo: la mitad de los SNPs. h75 si quita el pico, pero
+   es circular y deja el Fis positivo.
+   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/het_spectrum_d20_mask_win1kb.png
+
+* Fis corregido por tamano de muestra (He x 2n/(2n-1)): su valor esperado sin problemas
+  es 0. El Fis por sitio que usabamos espera -0.06 con 9 arboles. Validado con datos
+  simulados bajo HWE: fis_summary.tsv (fila sim_hwe).
+Scripts: snp_calling/het_checks.sh, snp_calling/mask_candidates.sh
+DECISION PENDIENTE: que mascara usar (propuesta: win1kb).
