@@ -17,6 +17,8 @@
 #         [SAMPLES=<file>] [PREFILTER=hard] bash het_checks.sh
 #   PREFILTER=hard applies the GATK hard filters of snp_datasets.sh with
 #   bcftools, for the raw native-depth calls. Outputs: results/het_checks/.
+#   PLOTS_ONLY=1 TAG=<name> bash het_checks.sh  redraws the plots of an
+#   existing TAG from its tables, without recomputing.
 ################################################################################
 
 set -euo pipefail
@@ -28,7 +30,8 @@ TMP_DIR="${WORK_DIR}/tmp"
 RSCRIPT_BIN="${RSCRIPT_BIN:-/home/genomics/miniconda3/envs/R_popstat_jorge/bin/Rscript}"
 VCFTOOLS_BIN="${VCFTOOLS_BIN:-/home/genomics/miniconda3/envs/popgen_tools/bin/vcftools}"
 
-VCF="${VCF:?set VCF}"
+PLOTS_ONLY="${PLOTS_ONLY:-0}"
+VCF="${VCF:-}"
 MASK="${MASK:-none}"
 TAG="${TAG:?set TAG}"
 SAMPLES="${SAMPLES:-}"
@@ -37,9 +40,11 @@ PREFILTER="${PREFILTER:-}"
 # Same hard filters as HARD_FILTERS in snp_datasets.sh
 HARD_EXPR='QD<2.0 || FS>60.0 || MQ<40.0 || SOR>3.0 || MQRankSum<-12.5 || ReadPosRankSum<-8.0'
 
+work="${TMP_DIR}/het_checks_${TAG}"
+if [[ "${PLOTS_ONLY}" != 1 ]]; then
+[[ -n "${VCF}" ]] || { echo "set VCF" >&2; exit 1; }
 command -v bcftools >/dev/null || { echo "conda activate SNP_call" >&2; exit 1; }
-mkdir -p "${OUT}" "${TMP_DIR}"
-work="${TMP_DIR}/het_checks_${TAG}"; mkdir -p "${work}"
+mkdir -p "${OUT}" "${TMP_DIR}" "${work}"
 echo "[$(date +'%F %T')] ${TAG}: $(basename "${VCF}"), mask $(basename "${MASK}")${SAMPLES:+, samples $(basename "${SAMPLES}")}${PREFILTER:+, prefilter ${PREFILTER}}"
 
 # -- 1. the SNP set: biallelic SNPs, masked, optional sample subset ------------
@@ -113,6 +118,8 @@ grep -v -P "^${TAG}\t" "${fsum}" > "${fsum}.tmp" || true
 awk -F'\t' -v OFS='\t' -v t="${TAG}" -v n="${n}" '{ print t, n, $1, $2, $3, $4, $5, $6, sprintf("%.4f", -1/(2*n-1)) }' "${work}/fis.tsv" >> "${fsum}.tmp"
 mv "${fsum}.tmp" "${fsum}"
 
+fi   # PLOTS_ONLY
+
 # -- 5. plots -------------------------------------------------------------------
 "${RSCRIPT_BIN}" - "${OUT}" "${TAG}" <<'REOF'
 a <- commandArgs(TRUE); out <- a[1]; tag <- a[2]
@@ -124,12 +131,13 @@ dev <- function(f, w, h, expr) {
   png(file.path(out, paste0(f, "_", tag, ".png")), width = w * 120, height = h * 120, res = 120); expr(); invisible(dev.off())
   pdf(file.path(out, paste0(f, "_", tag, ".pdf")), width = w, height = h); expr(); invisible(dev.off()) }
 dev("het_spectrum", 11, 4.5, function() {
-  par(mfrow = c(1, 2), mar = c(4.5, 5, 3, 1))
+  par(mfrow = c(1, 2), mar = c(4.5, 6.5, 3, 1))
   m <- rbind(sp$observed, sp$expected_hwe); colnames(m) <- sp$k_het
   barplot(m, beside = TRUE, col = c("grey25", "grey75"), border = NA, las = 1,
-          xlab = paste0("heterozygous trees per SNP (all ", n, " called)"), ylab = "SNPs",
+          xlab = paste0("heterozygous trees per SNP (all ", n, " called)"),
           main = paste0(tag, ": observed vs HWE"), legend.text = c("observed", "expected (HWE)"),
           args.legend = list(x = "topright", bty = "n"))
+  title(ylab = "SNPs", line = 5)   # clear of the horizontal tick labels
   plot(sp$k_het, sp$obs_over_exp, type = "b", pch = 19, log = "y", las = 1,
        xlab = "heterozygous trees per SNP", ylab = "observed / expected", main = "excess by class")
   abline(h = 1, lty = 2, col = "firebrick") })
