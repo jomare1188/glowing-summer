@@ -1,5 +1,5 @@
 mask	bp	pct_genome	d09_final_snps_removed	d20_final_snps_removed
 mask_lowmap	133405175	26.35	273416	265858
 mask_highdepth	41416497	8.18	1026425	1070831
-mask_paralog_windows	107309463	21.19	1422061	1530423
-mask_paralog_union	222359786	43.91	1543333	1628846
+mask_paralog_sites	882874	0.17	289930	522547
+mask_paralog_union	162324868	32.06	1176046	1256951

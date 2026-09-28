@@ -1,5 +1,5 @@
 dataset	set	n_snps	mean_Ho	mean_Fis
 d09	unmasked	1952554	0.3472	-0.1685
-d09	masked	409221	0.2190	0.0443
+d09	masked	776508	0.2346	-0.0101
 d20	unmasked	2004660	0.5512	-0.4261
-d20	masked	375814	0.2889	-0.0531
+d20	masked	747709	0.3487	-0.1617

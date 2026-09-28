@@ -14,7 +14,8 @@
 #                own median depth over covered bases
 #   paralog      per-SNP ExcessHet, H (het fraction) and D (HDplot allele-
 #                balance z) from the native-depth joint calls; thresholds are
-#                set after reviewing the diagnostics (phase hetstats)
+#                set after reviewing the diagnostics (phase hetstats); each
+#                flagged site is extended by PARA_WINDOW_BP (default 1 kb)
 #
 # Why not ExcessHet > 54.69 (GATK default): with n samples, ExcessHet cannot
 # exceed the value reached when every sample is heterozygous -- 19.8 (n=9),
@@ -70,6 +71,10 @@ PARA_EXCESSHET_MIN=${PARA_EXCESSHET_MIN:-}
 PARA_H_MIN=${PARA_H_MIN:-}
 PARA_D_MAX=${PARA_D_MAX:-}
 PARA_MERGE_BP=${PARA_MERGE_BP:-0}
+# Paralogs are regions, not single sites: each flagged site is extended by this
+# many bp on both sides (decided 28 Sep 2026 after het_checks.sh; see
+# mask_candidates.sh -- 1 kb brought corrected Fis on masked d20 to ~0).
+PARA_WINDOW_BP=${PARA_WINDOW_BP:-1000}
 
 FORCE_RERUN=${FORCE_RERUN:-false}
 PHASE="${1:-all}"
@@ -245,8 +250,12 @@ phase_paralog() {
       | "${MASK_ENV}/bedtools" sort -g "${MASK_DIR}/genome.txt" -i - \
       | "${MASK_ENV}/bedtools" merge -d "${PARA_MERGE_BP}" -i - > "${out}"
     log "  mask_paralog_sites.bed: $(wc -l < "${out}") intervals, $(bed_bp "${out}") bp"
-    printf 'PARA_EXCESSHET_MIN=%s\nPARA_H_MIN=%s\nPARA_D_MAX=%s\nPARA_MERGE_BP=%s\n' \
-        "${PARA_EXCESSHET_MIN}" "${PARA_H_MIN}" "${PARA_D_MAX}" "${PARA_MERGE_BP}" > "${MASK_DIR}/paralog/thresholds_used.txt"
+    "${MASK_ENV}/bedtools" slop -b "${PARA_WINDOW_BP}" -g "${MASK_DIR}/genome.txt" -i "${out}" \
+      | "${MASK_ENV}/bedtools" sort -g "${MASK_DIR}/genome.txt" -i - \
+      | "${MASK_ENV}/bedtools" merge -i - > "${MASK_DIR}/mask_paralog_windows.bed"
+    log "  mask_paralog_windows.bed (+-${PARA_WINDOW_BP} bp): $(bed_bp "${MASK_DIR}/mask_paralog_windows.bed") bp"
+    printf 'PARA_EXCESSHET_MIN=%s\nPARA_H_MIN=%s\nPARA_D_MAX=%s\nPARA_MERGE_BP=%s\nPARA_WINDOW_BP=%s\n' \
+        "${PARA_EXCESSHET_MIN}" "${PARA_H_MIN}" "${PARA_D_MAX}" "${PARA_MERGE_BP}" "${PARA_WINDOW_BP}" > "${MASK_DIR}/paralog/thresholds_used.txt"
 }
 
 ################################################################################
@@ -270,7 +279,7 @@ fis_stats() {
 phase_union() {
     local union="${MASK_DIR}/mask_paralog_union.bed" keep="${MASK_DIR}/keep_sites.bed"
     local parts=()
-    for m in mask_lowmap mask_highdepth mask_paralog_sites; do
+    for m in mask_lowmap mask_highdepth mask_paralog_windows; do
         [[ -f "${MASK_DIR}/${m}.bed" ]] && parts+=("${MASK_DIR}/${m}.bed") || warn "  ${m}.bed missing -- union built without it"
     done
     (( ${#parts[@]} > 0 )) || error "no masks built yet"

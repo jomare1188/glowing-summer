@@ -15,7 +15,7 @@ Como usar este archivo: cuando algo este listo, cambiar [ ] por [x] y anotar la 
 
 
 [x] ExcessHet de GATK por sitio, calculado con los datos a profundidad completa
-    -> snp_calling/results/masks/mask_paralog_sites.bed (ExcessHet >= 20, 13 muestras nativas)
+    -> snp_calling/results/masks/mask_paralog_windows.bed (ExcessHet >= 20, 13 muestras nativas, +-1 kb)
 [x] Mascara de profundidad maxima (sitios con cobertura anormalmente alta = repeticiones colapsadas)
     -> snp_calling/results/masks/mask_highdepth.bed
 [x] Mascara de mapeabilidad sobre la referencia de C. americana
@@ -148,7 +148,7 @@ NOTAS / RESPUESTAS
 
 (escribir aqui)
 
-[25 sep 2026 - Jorge] PASO 1: MASCARAS DE PARALOGOS - RESUMEN
+[25 sep 2026 - Jorge] PASO 1: MASCARAS DE PARALOGOS - RESUMEN (actualizado 28 sep: mascara v2 con ventana de 1 kb)
 
 Problema: los dos datasets tenian exceso de heterocigotos (Fis muy por debajo de 0),
 probablemente por paralogos colapsados.
@@ -156,8 +156,9 @@ probablemente por paralogos colapsados.
 Mascaras (snp_calling/results/masks/; todas son BED de EXCLUSION, nombres Chr01...):
   mask_lowmap.bed          GenMap k=100 e=2, mapeabilidad < 1              26.4% del genoma
   mask_highdepth.bed       >= 7 de 13 muestras con > 2x su mediana         8.2%
-  mask_paralog_sites.bed   ExcessHet >= 20 (llamado a profundidad nativa)  0.2%
-  mask_paralog_union.bed   las tres juntas  <- USAR ESTA                   32.1%
+  mask_paralog_windows.bed ExcessHet >= 20 (profundidad nativa) +-1 kb    21.2%
+  mask_paralog_union.bed   las tres juntas  <- USAR ESTA (v2, 28 sep)      43.9%
+  (la v1, sin ventana, 32.1% del genoma, queda en results/masks/old/)
 
 Grafico de diagnostico:
   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/paralog/paralog_diagnostics.png  (tambien .pdf)
@@ -169,21 +170,22 @@ Grafico de diagnostico:
 
 Hallazgos:
   - La mascara de profundidad contiene 95% de los sitios "todos heterocigotos".
-  - Enmascarar quita ~60% de los SNPs: quedan 777 K en d09 y 748 K en d20.
-  - Fis medio por sitio: d09 -0.17 -> -0.01 (resuelto); d20 -0.43 -> -0.16 (mejora,
-    falta revisar).
+  - Enmascarar (v2) quita ~80% de los SNPs: quedan 409 K en d09 y 376 K en d20.
+  - Fis medio por sitio: d20 -0.43 -> -0.05 (esperado -0.06 con 9 arboles: resuelto).
+    d09 -0.17 -> +0.04: a 9x se pierden heterocigotos y el Fis sube; por eso los
+    valores absolutos se reportan con d20.
 
 Tablas: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/masks_summary.tsv
         https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/fis_before_after.tsv
 
 Archivos a entregar en este paso (no estan en GitHub por tamano; se envian aparte):
   archivo                   tamano     comprimido (.gz)
-  mask_paralog_union.bed    44.0 MB    11.3 MB   <- la principal
-  keep_sites.bed            44.0 MB    11.4 MB   (complemento: sitios a conservar)
+  mask_paralog_union.bed    28.8 MB     7.4 MB   <- la principal
+  keep_sites.bed            28.8 MB     7.5 MB   (complemento: sitios a conservar)
   mask_lowmap.bed           26.3 MB     7.2 MB
   mask_highdepth.bed        20.0 MB     4.9 MB
-  mask_paralog_sites.bed    19.1 MB     4.1 MB
-  Total                    153.4 MB    38.9 MB
+  mask_paralog_windows.bed   0.7 MB     0.2 MB
+  Total                    104.6 MB    27.2 MB
 
 Tambien listos para el punto 4: BAMs nativos de las 18 muestras,
 snp_calling/results/native/bam/ (566 GB; falta definir como transferirlos).
@@ -242,4 +244,5 @@ The reason −0.06 is the reference point: with only 9 trees, Fis comes out slig
   es 0. El Fis por sitio que usabamos espera -0.06 con 9 arboles. Validado con datos
   simulados bajo HWE: fis_summary.tsv (fila sim_hwe).
 Scripts: snp_calling/het_checks.sh, snp_calling/mask_candidates.sh
-DECISION PENDIENTE: que mascara usar (propuesta: win1kb).
+DECISION (28 sep): win1kb. Ya es la mascara oficial: results/masks/mask_paralog_union.bed (v2).
+Con ella, en d20: 376 K SNPs y Fis por sitio -0.053 (esperado -0.059).
