@@ -20,6 +20,7 @@ Como usar este archivo: cuando algo este listo, cambiar [ ] por [x] y anotar la 
     -> snp_calling/results/masks/mask_highdepth.bed
 [x] Mascara de mapeabilidad sobre la referencia de C. americana
     -> snp_calling/results/masks/mask_lowmap.bed
+    -> entregado 30 sep: callicarpa_mask_lowmap_20260930.zip en el Drive (7.2 MB)
     UNION (usar esta): snp_calling/results/masks/mask_paralog_union.bed ; complemento: keep_sites.bed
 
 
