@@ -246,3 +246,14 @@ The reason −0.06 is the reference point: with only 9 trees, Fis comes out slig
 Scripts: snp_calling/het_checks.sh, snp_calling/mask_candidates.sh
 DECISION (28 sep): win1kb. Ya es la mascara oficial: results/masks/mask_paralog_union.bed (v2).
 Con ella, en d20: 376 K SNPs y Fis por sitio -0.053 (esperado -0.059).
+
+[30 sep 2026 - Jorge] ENTREGADO en el Drive (Callicarpa Archivos Crudos 2026):
+callicarpa_d20_masked_v2_20260930.zip (51.7 MB; md5 b4e85d1f4af6bd661f36e9d378587882)
+  - mask_paralog_union_v2.bed (mascara v2)
+  - callicarpa_d20_20x_9ind_snps_masked_v2.vcf.gz + .tbi: 401,017 SNPs bialelicos,
+    9 arboles, mascara aplicada, SIN MAF, SIN HWE, sin LD-pruning; con INFO/DP y
+    FORMAT AD/DP/GQ/PL. Script: snp_calling/masked_snps.sh
+  Son 401K y no 376K porque el set de 376K tenia --hwe 0.01. Los 25,203 SNPs que
+  vuelven tienen CERO arboles heterocigotos (homocigotos para alelos distintos: los
+  arboles forman grupos). Por eso en este archivo el Fis por sitio es +0.013 (con HWE
+  era -0.053). Todos los 376K estan incluidos.
