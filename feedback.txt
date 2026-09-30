@@ -54,7 +54,9 @@ Se usan para heterocigosidad individual y como base del ROH. Las mascaras del pu
 [x] d20: cohort.snps.final.vcf.gz (o el PASS antes de los filtros poblacionales)
     -> entregado 30 sep: callicarpa_d20_masked_v2_20260930.zip en el Drive
        (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d20/masked/)
-[ ] d09: lo mismo
+[x] d09: lo mismo
+    -> entregado 30 sep: callicarpa_d09_masked_v2_20260930.zip en el Drive
+       (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d09/masked/)
 
 
 Los paneles que tengo los escribio PLINK y solo traen GT. Sin DP ni GQ no puedo revisar la calidad por genotipo.
@@ -262,3 +264,10 @@ callicarpa_d20_masked_v2_20260930.zip (51.7 MB; md5 b4e85d1f4af6bd661f36e9d37858
   vuelven tienen CERO arboles heterocigotos (homocigotos para alelos distintos: los
   arboles forman grupos). Por eso en este archivo el Fis por sitio es +0.013 (con HWE
   era -0.053). Todos los 376K estan incluidos.
+
+[30 sep 2026 - Jorge] ENTREGADO en el Drive: callicarpa_d09_masked_v2_20260930.zip
+(62.6 MB; md5 95e43d49eb4d2548c8833f7c4d79c51b). Misma receta que d20 (media de
+profundidad 4-27): 441,298 SNPs, 13 arboles, sin MAF/HWE; incluye la misma mascara v2.
+Fis por sitio +0.112 (esperado -0.04): a 9x se pierden heterocigotos y, sin HWE, vuelven
+32K SNPs (85% sin ningun arbol heterocigoto). Usar d09 solo para ordenar los 4 arboles
+extra (549, 555, 560, 562); valores absolutos con d20.
