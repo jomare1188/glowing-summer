@@ -233,6 +233,9 @@ The reason −0.06 is the reference point: with only 9 trees, Fis comes out slig
    actual          32%                  748K       55x                 -0.161
    win1kb          44%                  376K       14x                 -0.013
    win1kb + h75    44%                  359K       4x                  +0.026
+   win1kb, sin filtros pop. (ENTREGADO 30 sep; sin MAF/HWE)
+                   44%                  401K       14x                 +0.093
+     -> los 25K SNPs extra tienen 0 arboles heterocigotos (deficit), por eso el Fis sube.
    (win1kb = extender 1 kb a cada lado de los sitios con ExcessHet >= 20;
     h75 = quitar SNPs con >= 75% de arboles heterocigotos)
    Recomendacion: win1kb. Lleva el Fis a ~0 sin usar la heterocigosidad misma para
