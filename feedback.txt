@@ -51,7 +51,9 @@ Se usan para heterocigosidad individual y como base del ROH. Las mascaras del pu
 ==================================================
 
 
-[ ] d20: cohort.snps.final.vcf.gz (o el PASS antes de los filtros poblacionales)
+[x] d20: cohort.snps.final.vcf.gz (o el PASS antes de los filtros poblacionales)
+    -> entregado 30 sep: callicarpa_d20_masked_v2_20260930.zip en el Drive
+       (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d20/masked/)
 [ ] d09: lo mismo
 
 
