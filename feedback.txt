@@ -37,9 +37,12 @@ Por que: los dos paneles (9x y 20x) muestran exceso de heterocigotos en todo el 
 ==================================================
 
 
-[ ] d20: results/d20/allsites/cohort.allsites.final.vcf.gz
-[ ] d09: results/d09/allsites/cohort.allsites.final.vcf.gz
-[ ] allsites_summary.tsv de cada uno
+[x] d20: results/d20/allsites/cohort.allsites.final.vcf.gz
+    -> version enmascarada: snp_calling/results/d20/allsites/cohort.allsites.masked_v2.vcf.gz (2.4 GB; aun no en el Drive)
+[x] d09: results/d09/allsites/cohort.allsites.final.vcf.gz
+    -> version enmascarada: snp_calling/results/d09/allsites/cohort.allsites.masked_v2.vcf.gz (2.4 GB; aun no en el Drive)
+[x] allsites_summary.tsv de cada uno
+    -> results/<d20|d09>/allsites/allsites_masked_summary.tsv y per_tree_heterozygosity.tsv
 
 
 Se usan para heterocigosidad individual y como base del ROH. Las mascaras del punto 1 deben aplicarse a estos archivos.
@@ -272,3 +275,57 @@ profundidad 4-27): 441,298 SNPs, 13 arboles, sin MAF/HWE; incluye la misma masca
 Fis por sitio +0.112 (esperado -0.04): a 9x se pierden heterocigotos y, sin HWE, vuelven
 32K SNPs (85% sin ningun arbol heterocigoto). Usar d09 solo para ordenar los 4 arboles
 extra (549, 555, 560, 562); valores absolutos con d20.
+
+[30 sep 2026 - Jorge] PUNTO 2 - FILTROS DE GENOTIPO ANTES DE LOS ALL-SITES ENMASCARADOS
+Por que: aun con la mascara v2 quedan heterocigotos falsos. En un heterocigoto real cerca
+de la mitad de las lecturas lleva cada alelo; segun la profundidad de cada llamado, solo
+2-4% de los heterocigotos reales deberian tener fraccion alterna < 0.25 o > 0.75. En d20
+enmascarado era 33-58% en seis arboles. Eso infla la heterocigosidad individual y corta
+ROH reales.
+Filtros elegidos (iguales en variantes e invariantes; se usa FORMAT/DP, no GQ, porque los
+invariantes traen RGQ):
+  - DP < 3 -> genotipo faltante
+  - heterocigoto que falla la prueba binomial de balance (p < 0.01) -> faltante
+  - despues, solo sitios con >= 80% de genotipos llamados
+Afinacion (https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/het_checks/gt_filter_tuning.tsv):
+  dataset  filtro                     SNPs     hets desbalanceados   exceso het   Fis por sitio
+                                               (bajos / altos)       (top 3)
+  d20      ninguno                    401,017  33-58% / 19-26%       2.9x         +0.013
+  d20      DP<5                       381,076  33-58% / 19-26%       3.0x         +0.005
+  d20      DP<5 + binom p<1e-5        357,658  28-52% / 16-22%       2.7x         +0.021
+  d20      DP<5 + binom p<1e-4        336,907  24-47% / 13-19%       2.5x         +0.037
+  d20      DP<5 + binom p<1e-3        305,876  16-38% / 10-14%       2.2x         +0.061
+  d20      DP<5 + binom p<0.01        264,306   7-23% /  5-7%        1.9x         +0.099
+  d20      DP<3 + binom p<0.01  <--   275,434   8-24% /  5-8%        1.9x         +0.103
+  d09      ninguno                    441,298  33-52% / 19-33%       2.7x         +0.112
+  d09      DP<5 + binom p<0.01        226,840  21-38% / 12-24%       3.5x         +0.056
+  d09      DP<3 + binom p<0.01  <--   318,505  24-39% / 13-25%       2.7x         +0.084
+  (bajos/altos = arboles de heterocigosidad baja/alta; exceso = observado/esperado HWE
+   en las 3 clases con mas arboles heterocigotos)
+Justificacion:
+  - p < 0.01 no es demasiado estricto: aun asi los arboles bajos tienen 2-6x mas hets
+    desbalanceados de lo esperado. Relajarlo solo deja entrar hets falsos. La mayoria de
+    los SNPs que se pierden quedan monomorficos: su unico het era malo (SNPs falsos).
+  - DP < 3 y no DP < 5: misma calidad en d20 con 4% mas SNPs; en d09 (9x) DP < 5 bota la
+    mitad de los SNPs sin mejorar la calidad.
+  - d09 queda mas ruidoso (24-39%): a 9x hay muy pocas lecturas por llamado para separar
+    un het malo de uno bueno. d09 solo para ordenar los 4 arboles extra.
+  - Con estos filtros el Fis sube: seis arboles quedan muy homocigotos (F +0.46 a +0.73 en
+    d20) y 554, 556 y 559 siguen heterocigotos con llamados limpios (F -0.29 a -0.61). Los
+    dos grupos son de los arboles, no del filtro. Siguen faltando los metadatos.
+Detalle en el README (seccion "Genotype filters for heterozygosity and ROH").
+
+[30 sep 2026 - Jorge] PUNTO 2 LISTO: ALL-SITES ENMASCARADOS (mascara v2 + DP<3 + binom p<0.01)
+Script: snp_calling/mask_allsites.sh. Los sitios que quedan monomorficos tras los filtros se
+mantienen (siguen siendo sitios callable para el denominador).
+                              d20 (9 arboles)   d09 (13 arboles)
+  sitios (callable)           159,836,626       137,440,349
+  invariantes                 156,001,767       134,048,338
+  registros SNP               3,834,859         3,392,011
+  SNPs polimorficos           276,463           320,837
+  H por arbol (het/callable)  0.00016-0.00090   0.00019-0.00091
+d09 tiene menos sitios porque a 9x muchos genotipos tienen DP < 3. H por arbol coincide
+entre d20 y d09 para los arboles compartidos. 554, 556, 559 (y en d09 555, 560, 562) son
+~3x mas heterocigotos que los demas.
+Para ROH (punto 5): usar solo los SNPs polimorficos bialelicos de este archivo; los registros
+SNP incluyen sitios con todos los arboles homocigotos para el ALT (sin informacion).

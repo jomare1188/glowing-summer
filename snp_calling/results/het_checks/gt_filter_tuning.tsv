@@ -1,0 +1,11 @@
+dataset	genotype_filter	snps	unbalanced_hets_lower_trees	unbalanced_hets_higher_trees	top3_class_het_excess	mean_site_Fis	chosen
+d20	none	401017	33-58%	19-26%	2.9	0.0131	
+d20	DP<5	381076	33-58%	19-26%	3.0	0.0046	
+d20	DP<5 + het binom p<1e-5	357658	28-52%	16-22%	2.7	0.0212	
+d20	DP<5 + het binom p<1e-4	336907	24-47%	13-19%	2.5	0.0365	
+d20	DP<5 + het binom p<1e-3	305876	16-38%	10-14%	2.2	0.0612	
+d20	DP<5 + het binom p<0.01	264306	7-23%	5-7%	1.9	0.0993	
+d20	DP<3 + het binom p<0.01	275434	8-24%	5-8%	1.9	0.1027	YES
+d09	none	441298	33-52%	19-33%	2.7	0.1117	
+d09	DP<5 + het binom p<0.01	226840	21-38%	12-24%	3.5	0.0560	
+d09	DP<3 + het binom p<0.01	318505	24-39%	13-25%	2.7	0.0835	YES

@@ -143,6 +143,20 @@ TEST_INTERVAL=Chr17:1-2000000 bash generate_all_vcf.sh d20  # quick test region
 Standalone; `snp_datasets.sh` is not modified. It re-genotypes the retained
 per-sample GVCFs, so it needs no BAMs. See [All-sites VCFs](#all-sites-vcfs-for-diversity-and-heterozygosity).
 
+### 5. Paralog masks, checks and masked VCFs
+
+```bash
+cd snp_calling
+bash native_depth.sh all                  # native-depth BAMs (18) + joint calls (13 d09 trees)
+bash paralog_masks.sh all                 # mappability, max depth, het diagnostics
+PARA_EXCESSHET_MIN=20 bash paralog_masks.sh paralog && bash paralog_masks.sh union
+VCF=<vcf.gz> MASK=<bed|none> TAG=<name> bash het_checks.sh   # het spectrum, per-tree Ho/F, Fis
+bash mask_allsites.sh all                 # masked all-sites VCFs + per-tree heterozygosity
+bash masked_snps.sh d20                   # masked SNP VCF, no MAF/HWE (delivery)
+```
+
+See [Paralog masks](#paralog-masks-v2) and [Genotype filters](#genotype-filters-for-heterozygosity-and-roh).
+
 ### Storage behaviour
 
 Intermediates are deleted as soon as they are consumed. Sorted BAMs are removed
@@ -278,6 +292,122 @@ QD/FS/MQ annotations. Chromosome names stay as `Chr01…`. Every SNP in
 more SNPs in total because MAF/HWE are not applied. The unfiltered joint call
 is kept at `results/<tag>/allsites/raw/cohort.allsites.raw.vcf.gz`, and
 per-interval counts are in `allsites_summary.tsv`.
+
+> These unmasked files are an intermediate. For heterozygosity and ROH use the
+> **masked** all-sites VCFs described below.
+
+### Paralog masks (v2)
+
+Both datasets showed genome-wide excess heterozygosity (per-site Fis −0.17 in
+d09, −0.43 in d20), too strong to be a depth effect. Collapsed paralogs
+(reads from two gene copies mapped to one place, plus C. ampla reads on the
+C. americana reference) make every tree look heterozygous. `--hwe 0.01` has
+almost no power against them with 9–13 trees.
+
+`paralog_masks.sh` builds three **exclusion** BEDs and their union
+(`results/masks/mask_paralog_union.bed`, 222.4 Mb, **43.9 % of the genome**):
+
+| Layer | Rule | Genome |
+|---|---|---|
+| `mask_lowmap.bed` | GenMap k = 100, e = 2; mappability < 1 | 26.4 % |
+| `mask_highdepth.bed` | ≥ 7 of 13 trees above 2× their median depth (native-depth BAMs) | 8.2 % |
+| `mask_paralog_windows.bed` | ExcessHet ≥ 20 in native-depth calls of 13 trees, extended ±1 kb | 21.2 % |
+
+- **ExcessHet ≥ 20, not GATK's 54.69.** ExcessHet has a ceiling set by the number
+  of samples: even with every sample heterozygous it cannot pass 19.8 (n = 9),
+  31.0 (n = 13) or 45.4 (n = 18). A 54.69 cutoff masks nothing here. 20 is
+  p < 0.01 at n = 13.
+- **±1 kb window.** Without it, masked d20 still had 55× more SNPs with all 9 trees
+  heterozygous than HWE predicts, and per-site Fis −0.16 (≈ −0.06 expected with
+  n = 9). Paralogs are regions: extending each flagged site by 1 kb brought
+  Fis to −0.05. Six stricter options were compared with `het_checks.sh` and
+  `mask_candidates.sh` (`results/het_checks/mask_candidates.tsv`).
+
+### Genotype filters for heterozygosity and ROH
+
+After masking, individual heterozygosity and ROH still see **false heterozygous
+calls**. A true heterozygote has about half its reads on each allele. Given each
+call's depth, only **2–4 %** of true het calls should have an alt-read fraction
+below 0.25 or above 0.75. In masked d20, **33–58 %** of het calls in six of the
+trees looked like that, with extra peaks at 0.10–0.20 and 0.85–0.90 (leftover
+multi-copy reads). False hets inflate heterozygosity and break real ROH.
+
+Two genotype-level rules are applied, **identically to variant and invariant
+calls** (FORMAT/DP, not GQ, because invariant sites carry RGQ):
+
+- **DP < 3 → missing**;
+- **het call whose read counts fail a binomial balance test (p < 0.01) → missing**
+  (`binom(FORMAT/AD)` in bcftools).
+
+Sites are then kept only if ≥ 80 % of genotypes are still called.
+
+Tuning (`results/het_checks/gt_filter_tuning.tsv`; masked SNPs, no MAF/HWE;
+"lower" / "higher" = the low- and high-heterozygosity trees; excess = observed /
+HWE-expected SNPs in the three most heterozygous classes):
+
+| Dataset | Genotype filter | SNPs | Unbalanced hets, lower trees | Unbalanced hets, higher trees | Het excess | Per-site Fis |
+|---|---|---|---|---|---|---|
+| d20 | none | 401,017 | 33–58 % | 19–26 % | 2.9× | +0.013 |
+| d20 | DP < 5 | 381,076 | 33–58 % | 19–26 % | 3.0× | +0.005 |
+| d20 | DP < 5 + binom p < 1e-5 | 357,658 | 28–52 % | 16–22 % | 2.7× | +0.021 |
+| d20 | DP < 5 + binom p < 1e-4 | 336,907 | 24–47 % | 13–19 % | 2.5× | +0.037 |
+| d20 | DP < 5 + binom p < 1e-3 | 305,876 | 16–38 % | 10–14 % | 2.2× | +0.061 |
+| d20 | DP < 5 + binom p < 0.01 | 264,306 | 7–23 % | 5–7 % | 1.9× | +0.099 |
+| **d20** | **DP < 3 + binom p < 0.01** | **275,434** | **8–24 %** | **5–8 %** | **1.9×** | **+0.103** |
+| d09 | none | 441,298 | 33–52 % | 19–33 % | 2.7× | +0.112 |
+| d09 | DP < 5 + binom p < 0.01 | 226,840 | 21–38 % | 12–24 % | 3.5× | +0.056 |
+| **d09** | **DP < 3 + binom p < 0.01** | **318,505** | **24–39 %** | **13–25 %** | **2.7×** | **+0.084** |
+
+Why these values:
+
+- **Binomial p < 0.01 is not over-strict.** Even there, the lower trees keep
+  2–6× more unbalanced hets than true hets would show. Relaxing it only lets
+  false hets back in. Most SNPs it removes become monomorphic, i.e. their only
+  het call was a bad one, so they were probably false SNPs.
+- **DP < 3 rather than DP < 5.** Same quality in d20 but 4 % more SNPs, and in
+  d09 (9×) DP < 5 throws away half the SNPs (mostly through missingness)
+  without improving quality.
+- **d09 stays noisier** (24–39 % unbalanced): at 9× there are too few reads per
+  call to tell a bad het from a good one. Use d09 only to rank the four extra
+  trees; absolute values come from d20.
+- **Fis turns positive with these filters.** Without the false hets, six trees are
+  strongly homozygous (F +0.46 to +0.73 in d20) while 554, 556 and 559 stay
+  heterozygous with clean, balanced calls (F −0.29 to −0.61). The two groups are
+  a property of the trees, not of the filter.
+
+### Masked all-sites VCFs (the base for heterozygosity and ROH)
+
+`mask_allsites.sh` takes the unmasked all-sites VCFs, removes the v2 mask,
+applies the two genotype filters above and re-applies `--max-missing 0.8`.
+Sites left monomorphic by the filters stay in the file, because they are still
+callable sites for the heterozygosity denominator.
+
+```
+results/<tag>/allsites/cohort.allsites.masked_v2.vcf.gz   (+ .tbi, .stats.txt)
+results/<tag>/allsites/allsites_masked_summary.tsv        per chromosome
+results/<tag>/allsites/per_tree_heterozygosity.tsv        per tree: callable sites, het sites, H
+```
+
+| | d20 (9 trees) | d09 (13 trees) |
+|---|---|---|
+| Sites kept (callable) | 159,836,626 | 137,440,349 |
+| Invariant sites | 156,001,767 | 134,048,338 |
+| SNP records | 3,834,859 | 3,392,011 |
+| Polymorphic SNPs | 276,463 | 320,837 |
+| Per-tree H (het / callable sites) | 0.00016–0.00090 | 0.00019–0.00091 |
+| File size | 2.4 GB | 2.4 GB |
+
+d09 keeps fewer callable sites because at 9× many genotypes have DP < 3; the
+DP rule removes them and more sites then fail the 80 % call rate (13 % of
+Chr17 sites, against 0.5 % in d20). Per-tree H agrees between the datasets for
+the shared trees. 554, 556 and 559 (and in d09 also 555, 560 and 562) are about
+3× more heterozygous than the others; see the metadata question in
+`feedback.txt`.
+
+For ROH, take only the **polymorphic** biallelic SNPs from this file. The SNP
+records also include sites where every tree is homozygous for the ALT allele
+(fixed differences from the reference). They carry no information and would
+lengthen ROH artificially.
 
 ### ROH input preparation
 
@@ -726,22 +856,21 @@ will not resolve them; they need fresh tissue.
 ## Legacy: all-sites VCFs for pixy
 
 The earlier pipeline produced all-sites VCFs (variant + invariant) for π
-estimation with [pixy](https://pixy.readthedocs.io/). The current pipeline does
-**not** — it emits variant sites only. Those scripts and their outputs are
-preserved under [`snp_calling/old/`](snp_calling/old) and
+estimation with [pixy](https://pixy.readthedocs.io/). Those scripts and their
+outputs are preserved under [`snp_calling/old/`](snp_calling/old) and
 `snp_calling/results/variants/`, and were produced from the non-equalised call
-set. If π estimation is needed on the equalised datasets, the all-sites path has
-to be re-added to `snp_datasets.sh`; its results are subject to the same
-coverage bias described at the top of this document.
+set; do not use them. All-sites VCFs for the equalised datasets are now built by
+`generate_all_vcf.sh` and masked by `mask_allsites.sh` (see Methods).
 
 ---
 
 ## Open items
 
-- Short-class F_ROH is depth-dependent (see above). Consider whether a
-  genotype-level depth floor (e.g. `--minDP`) would stabilise it further, and
-  whether a 30× dataset is worth building to confirm the trend has plateaued by
-  20×.
+- Short-class F_ROH is depth-dependent (see above). A genotype-level depth
+  floor (DP < 3) and a het allele-balance filter are now applied in the masked
+  all-sites VCFs; the ROH above predates them and the paralog mask and is being
+  redone (feedback.txt item 5). Whether a 30× dataset is worth building to
+  confirm the trend has plateaued by 20× is still open.
 - The 14 bp 5′ hard trim is inherited from an earlier configuration and should
   be re-justified against the current raw FastQC report.
 - Decide whether 553, 557, 558, 563 and 564 are reported as excluded or
