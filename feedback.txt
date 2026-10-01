@@ -41,7 +41,8 @@ Por que: los dos paneles (9x y 20x) muestran exceso de heterocigotos en todo el 
     -> version enmascarada: snp_calling/results/d20/allsites/cohort.allsites.masked_v2.vcf.gz
     -> entregado 1 oct en el Drive: callicarpa_d20_allsites_masked_v2_20261001.zip (2.40 GB; md5 d9b997099df334728343105d5e6a94fc)
 [x] d09: results/d09/allsites/cohort.allsites.final.vcf.gz
-    -> version enmascarada: snp_calling/results/d09/allsites/cohort.allsites.masked_v2.vcf.gz (2.4 GB; aun no en el Drive)
+    -> version enmascarada: snp_calling/results/d09/allsites/cohort.allsites.masked_v2.vcf.gz
+    -> entregado 1 oct en el Drive: callicarpa_d09_allsites_masked_v2_20261001.zip (2.42 GB; md5 311fd418eb5eddf366342180bcb6ad4f)
 [x] allsites_summary.tsv de cada uno
     -> results/<d20|d09>/allsites/allsites_masked_summary.tsv y per_tree_heterozygosity.tsv
 
