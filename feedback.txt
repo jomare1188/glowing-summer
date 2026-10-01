@@ -63,11 +63,16 @@ Se usan para heterocigosidad individual y como base del ROH. Las mascaras del pu
 [ ] d09: lo mismo
     -> enviado 30 sep (PROVISIONAL): callicarpa_d09_masked_v2_20260930.zip en el Drive
        (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d09/masked/)
-    PENDIENTE (1 oct): estos VCF de SNPs se hicieron ANTES de los filtros de genotipo del
-    punto 2 (DP < 3 + prueba binomial p < 0.01), asi que no son consistentes con los puntos
-    1 y 2 (d20: 401K SNPs aqui vs 276K SNPs polimorficos en el all-sites enmascarado).
-    Esperando la respuesta de Tatiana sobre que version necesita antes de rehacerlos y
-    marcar este punto.
+    Esos VCF provisionales se hicieron ANTES de los filtros de genotipo del punto 2, asi que
+    no eran consistentes con los puntos 1 y 2.
+    REGENERADOS 1 oct (consistentes con el punto 2): se sacan directamente del all-sites
+    enmascarado, asi que tienen exactamente los mismos sitios y genotipos (mascara v2 +
+    DP < 3 + prueba binomial p < 0.01 + max-missing 0.8; sin MAF/HWE/LD; SNPs bialelicos
+    polimorficos; INFO/DP y FORMAT AD/DP/GQ/PL). Script: snp_calling/masked_snps.sh
+      d20: snp_calling/results/d20/masked/cohort.snps.masked_v2_gtfilt.vcf.gz  275,420 SNPs (29 MB)
+      d09: snp_calling/results/d09/masked/cohort.snps.masked_v2_gtfilt.vcf.gz  318,497 SNPs (40 MB)
+    Son un subconjunto de los provisionales (ningun SNP nuevo). Los provisionales quedan en
+    results/<tag>/masked/old_provisional_20260930/. Pendiente: subirlos al Drive y marcar.
 
 
 Los paneles que tengo los escribio PLINK y solo traen GT. Sin DP ni GQ no puedo revisar la calidad por genotipo.

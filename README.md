@@ -152,7 +152,7 @@ bash paralog_masks.sh all                 # mappability, max depth, het diagnost
 PARA_EXCESSHET_MIN=20 bash paralog_masks.sh paralog && bash paralog_masks.sh union
 VCF=<vcf.gz> MASK=<bed|none> TAG=<name> bash het_checks.sh   # het spectrum, per-tree Ho/F, Fis
 bash mask_allsites.sh all                 # masked all-sites VCFs + per-tree heterozygosity
-bash masked_snps.sh d20                   # masked SNP VCF, no MAF/HWE (delivery)
+bash masked_snps.sh d20                   # SNP VCF taken from the masked all-sites (item 3)
 ```
 
 See [Paralog masks](#paralog-masks-v2) and [Genotype filters](#genotype-filters-for-heterozygosity-and-roh).
@@ -403,6 +403,12 @@ Chr17 sites, against 0.5 % in d20). Per-tree H agrees between the datasets for
 the shared trees. 554, 556 and 559 (and in d09 also 555, 560 and 562) are about
 3× more heterozygous than the others; see the metadata question in
 `feedback.txt`.
+
+**SNP-only version** (`masked_snps.sh`): the biallelic SNPs that are polymorphic
+in the cohort, taken straight from this file, so sites and genotypes are identical:
+`results/<tag>/masked/cohort.snps.masked_v2_gtfilt.vcf.gz` (d20 275,420 SNPs; d09
+318,497). A first version from 30 Sep 2026 was built without the genotype filters
+and is kept in `results/<tag>/masked/old_provisional_20260930/`; do not use it.
 
 For ROH, take only the **polymorphic** biallelic SNPs from this file. The SNP
 records also include sites where every tree is homozygous for the ALT allele
