@@ -58,13 +58,13 @@ Se usan para heterocigosidad individual y como base del ROH. Las mascaras del pu
 
 
 [ ] d20: cohort.snps.final.vcf.gz (o el PASS antes de los filtros poblacionales)
-    -> enviado 30 sep (PROVISIONAL): callicarpa_d20_masked_v2_20260930.zip en el Drive
-       (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d20/masked/)
+    -> entregado 1 oct: callicarpa_d20_snps_masked_v2_gtfilt_20261001.zip en el Drive
+       (37 MB; md5 cf8126a0b38a59a866e79d2b651229fd)
 [ ] d09: lo mismo
-    -> enviado 30 sep (PROVISIONAL): callicarpa_d09_masked_v2_20260930.zip en el Drive
-       (PASS + mascara v2, sin MAF/HWE; FORMAT AD/DP/GQ; snp_calling/results/d09/masked/)
-    Esos VCF provisionales se hicieron ANTES de los filtros de genotipo del punto 2, asi que
-    no eran consistentes con los puntos 1 y 2.
+    -> entregado 1 oct: callicarpa_d09_snps_masked_v2_gtfilt_20261001.zip en el Drive
+       (48 MB; md5 478eec6db27ae227fce47e60da9c6232)
+    (Los VCF provisionales del 30 sep se hicieron ANTES de los filtros de genotipo del punto
+    2 y no eran consistentes con los puntos 1 y 2; se borraron del Drive el 1 oct.)
     REGENERADOS 1 oct (consistentes con el punto 2): se sacan directamente del all-sites
     enmascarado, asi que tienen exactamente los mismos sitios y genotipos (mascara v2 +
     DP < 3 + prueba binomial p < 0.01 + max-missing 0.8; sin MAF/HWE/LD; SNPs bialelicos
@@ -72,7 +72,7 @@ Se usan para heterocigosidad individual y como base del ROH. Las mascaras del pu
       d20: snp_calling/results/d20/masked/cohort.snps.masked_v2_gtfilt.vcf.gz  275,420 SNPs (29 MB)
       d09: snp_calling/results/d09/masked/cohort.snps.masked_v2_gtfilt.vcf.gz  318,497 SNPs (40 MB)
     Son un subconjunto de los provisionales (ningun SNP nuevo). Los provisionales quedan en
-    results/<tag>/masked/old_provisional_20260930/. Pendiente: subirlos al Drive y marcar.
+    results/<tag>/masked/old_provisional_20260930/. Cada zip incluye mask_paralog_union_v2.bed.
 
 
 Los paneles que tengo los escribio PLINK y solo traen GT. Sin DP ni GQ no puedo revisar la calidad por genotipo.
