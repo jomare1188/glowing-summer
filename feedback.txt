@@ -87,6 +87,8 @@ Los paneles que tengo los escribio PLINK y solo traen GT. Sin DP ni GQ no puedo 
 
 [ ] BAMs a profundidad nativa (sin submuestrear) de todas las muestras con lecturas, incluidas 553, 557, 558, 563 y 564
     (o permiso para correr ANGSD / NgsRelate en el servidor)
+    -> 5 oct: ANGSD/NgsRelate corrido en el servidor sobre los 18 BAMs nativos (clonality_angsd.sh);
+       resultados en snp_calling/results/clonality/ (ver nota del 5 oct). Sin marcar: falta confirmar etiquetas.
 
 
 Por que: la clonalidad se va a hacer con verosimilitudes de genotipo (ANGSD -doIBS / NgsRelate) y no con genotipos llamados. P1FS (549) es un esqueje de un arbol de Sonadora, y sus posibles arboles de origen (FS830, FS834s8, FS835s7) quedaron fuera de los dos paneles por baja profundidad. Solo con los BAMs se puede responder esa pregunta. 563 y 564 son el control positivo: son duplicados conocidos de 562 y 561.
@@ -345,3 +347,36 @@ SNP incluyen sitios con todos los arboles homocigotos para el ALT (sin informaci
 [2 oct 2026 - Jorge] Tatiana ya descargo los archivos de los puntos 1, 2 y 3. Se borraron del
 Drive para liberar espacio (copias locales en el servidor). Punto 3 marcado.
 ESPERANDO LA RETROALIMENTACION DE TATIANA ANTES DE SEGUIR (puntos 4, 5 y 6).
+
+[5 oct 2026 - Jorge] CLONALIDAD PARTE A (ANGSD + NgsRelate, 18 BAMs nativos) - RESULTADOS
+Script: snp_calling/clonality_angsd.sh (base: el script de Tatiana; cambios: alelos fijos
+de los SNPs, corrida en paralelo por cromosoma, matriz IBS reconstruida, y frecuencias sin
+563/564 como prueba de sensibilidad). ANGSD 0.940, NgsRelate 2.3.1. 217,220 sitios usados.
+Ademas: discordancia de genotipos llamados con prior plano (posterior >= 0.95), que no
+depende de frecuencias alelicas.
+
+1) CONTROLES: LAS ETIQUETAS PARECEN CRUZADAS.
+   pareja        rab    J7     discordancia   lectura
+   562-563       0.00   0.00   72%            NO son el mismo arbol
+   561-564       0.00   0.00   74%            NO son el mismo arbol
+   561-563       0.96   0.30    3%            mismo arbol
+   562-564       0.95   0.90    5%            mismo arbol
+   Los datos dicen 563 = 561 y 564 = 562 (al reves de la tabla). Por favor confirmar con la
+   hoja de muestras. Si se confirma, el metodo funciona; si no, aplica la regla de parada.
+
+2) GRUPOS (discordancia; el control da 3-5% = error entre dos librerias del mismo arbol):
+   547, 548, 549                  2-3%   un solo genotipo: P1FS (549) es clon de 547 y 548
+   550, 551, 552                  8-14%  emparentados con 547-549 pero no clones (PV?)
+   557, 559, 560, 562, 564        4-6%   un solo genotipo
+   554, 555, 556 (y 553 a 12%)    4-5%   un solo genotipo (553 tiene 3.9x, mas error)
+   561, 563                       3%     control
+   558                            >=47%  distinto de todos
+   P1FS (549) NO es clon de ningun arbol de Sonadora (62-82% con 553-560).
+   Matriz: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/clonality/geno_discord_matrix.tsv
+   Arbol:  https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/clonality/upgma_geno_discord.png  (y upgma_ibs.png)
+   Tabla por pareja: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/clonality/pairs_all.tsv ; resumen: pairs_of_interest.tsv
+   NgsRelate: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/clonality/ngsrelate.res (153 parejas) y ngsrelate_freq16.res (frecuencias sin
+   563/564; mismas conclusiones).
+   Ojo: el exceso de heterocigosidad de 554-560/562 cuadra con que sean dos clones.
+Pendiente: confirmar etiquetas 561-564; nombres de los arboles 547/548; Parte B (umbral con
+replicas a 20x) para ver si 553 (12%) es el mismo clon o un pariente.

@@ -43,6 +43,14 @@
 # what is pending; entries are ticked with paths/commits as work lands.
 !feedback.txt
 !snp_calling/results/*/allsites/NOT_FOR_DELIVERY_unmasked.txt
+# Clonality Part A (clonality_angsd.sh): small result files only. The large
+# glf/mafs/ibs.gz, sites and chunk outputs stay out (re-run the script).
+!snp_calling/results/clonality/*.res
+!snp_calling/results/clonality/*.ibsMat
+!snp_calling/results/clonality/*.arg
+!snp_calling/results/clonality/ids.txt
+!snp_calling/results/clonality/versions.txt
+!snp_calling/results/clonality/sites_allele_conflicts.txt
 
 # v1 (pixy) results, kept so the superseded analysis stays readable in the
 # tree and not only in git history. Note the surrounding directory holds
