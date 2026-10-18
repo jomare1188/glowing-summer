@@ -380,3 +380,18 @@ depende de frecuencias alelicas.
    Ojo: el exceso de heterocigosidad de 554-560/562 cuadra con que sean dos clones.
 Pendiente: confirmar etiquetas 561-564; nombres de los arboles 547/548; Parte B (umbral con
 replicas a 20x) para ver si 553 (12%) es el mismo clon o un pariente.
+
+[18 oct 2026 - Jorge] CHEQUEO RAPIDO DE LA CAPA ExcessHet >= 20 (fases stats + check del script
+de Tatiana, guardado como snp_calling/mask_v3_genets.sh; una libreria por genet: 547 550 551 552
+554 559 561). Tabla: https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/v3_genets/check_excesshet_layer.tsv
+  Sitios marcados por ExcessHet >= 20: 882,874
+    parecen heterocigosis REAL (balanceados y no todos los genets het):   35,783  =  4.1%
+    parecen paralogos:                                                   847,091  = 95.9%
+      - los 7 genets heterocigotos:                                      819,633  (93%)
+      - balance alelico sesgado (fuera de 0.3-0.7, >= 20 lecturas):      281,108  (32%)
+  Segun la regla: 4.1% es bajo -> la mascara se queda; solo se ajusta Methods (construida antes
+  de conocer la clonalidad, conservadora, Ho como limite inferior).
+  OJO: el 95.9% viene sobre todo de "todos los genets heterocigotos". Si se mira solo el sesgo
+  alelico (la pregunta del primer mensaje) es 32%, que por esa regla seria "pocos". Confirmar
+  cual criterio vale antes de cerrar.
+  (Version con las 13 librerias, sin colapsar clones: 19% reales, 31% sesgados, 65% todas het.)

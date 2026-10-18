@@ -1,0 +1,4 @@
+group	snps	no_het_genet	with_het_genet	evaluable	skewed	all_genets_het	paralog_like	real_like	pct_paralog_like_of_evaluable	pct_real_like_of_evaluable
+v2_flagged_ExcessHet_ge20	882874	0	882874	882874	281108	819633	847091	35783	95.9	4.1
+v2_not_flagged	15640926	9626712	6014214	4538939	3276376	387196	3450177	1088762	76.0	24.0
+thresholds	AB_LO=0.3 AB_HI=0.7 AB_MIN_READS=20 ALLHET_MIN_CALLED=6
