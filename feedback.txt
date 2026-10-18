@@ -395,3 +395,5 @@ de Tatiana, guardado como snp_calling/mask_v3_genets.sh; una libreria por genet:
   alelico (la pregunta del primer mensaje) es 32%, que por esa regla seria "pocos". Confirmar
   cual criterio vale antes de cerrar.
   (Version con las 13 librerias, sin colapsar clones: 19% reales, 31% sesgados, 65% todas het.)
+  BAMs nativos (results/native/bam/, 566 GB): se GUARDAN hasta que Tatiana decida la mascara y
+  se haga la Parte B (necesita 552/554/559; una corrida nueva de ANGSD necesitaria los 18).
