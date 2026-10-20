@@ -34,6 +34,8 @@
 #   check    QUICK CHECK for Tatiana: of the sites flagged by ExcessHet >= 20,
 #            how many show paralog evidence in the 7 genets, and how many look
 #            like real heterozygosity (balanced reads, not all genets het)
+#   reldepth depth relative to each genet's median, flagged vs not flagged
+#            (Tatiana 19 Oct: near 2x -> mask stays; near 1x -> go on)
 #   ---- review the check with Tatiana; if the mask stays, stop here ----
 #   depth    high-depth layer counting genets (>= HIGHDP_MIN_GENETS of 7)
 #   paralog  new paralog sites: skewed allele balance OR all genets het
@@ -372,6 +374,110 @@ phase_remask() {
 }
 
 ################################################################################
+# PHASE reldepth — depth relative to each genet's median (Tatiana, 19 Oct)
+################################################################################
+# Neither "all genets het" nor allele balance separates paralogs from real
+# hets inside the ExcessHet layer (a 2-copy paralog with a fixed difference
+# gives AB ~0.5 too). Depth does: a collapsed 2-copy paralog sits near 2x,
+# a real het near 1x.
+# Per site: FORMAT/DP of each genet / that genet's median (cutoffs.tsv,
+# mosdepth on the native BAM); missing DP = 0; site value = mean of the 7.
+# GATK FORMAT/DP drops some reads mosdepth counts, so the scale is checked:
+# each genet's median FORMAT/DP over not-flagged SNPs is reported, and a
+# second normalisation by those VCF medians is computed alongside.
+# Groups: not_flagged, flagged (ExcessHet >= 20), flagged_bal_allhet
+# (flagged + balanced AB [AB_LO,AB_HI] with >= AB_MIN_READS het reads + all
+# called genets het, >= ALLHET_MIN_CALLED called), flagged_rest (flagged minus
+# that subset). Also % of each group inside the v2 high-depth layer.
+# REGION=Chr17 limits the run (test); outputs then go to reldepth_<REGION>/.
+# Outputs (reldepth/): site_reldepth_genets7.tsv.gz (not tracked),
+#   reldepth_medians.tsv, reldepth_bins.tsv, reldepth_groups.tsv,
+#   reldepth_summary.tsv, reldepth_hist.png/.pdf (plot_reldepth.R)
+phase_reldepth() {
+    [[ -f "${NATIVE_VCF}.tbi" ]] || error "missing ${NATIVE_VCF}"
+    local cut="${MASK_DIR}/depth/cutoffs.tsv" hd="${MASK_DIR}/mask_highdepth.bed"
+    local rscript="${RSCRIPT_BIN:-/home/genomics/miniconda3/envs/R_popstat_jorge/bin/Rscript}"
+    local region="${REGION:-}" out="${V3}/reldepth"
+    [[ -n "${region}" ]] && out="${V3}/reldepth_${region//[:,]/_}"
+    mkdir -p "${out}"
+    local sites="${out}/site_reldepth_genets7.tsv.gz"
+
+    # Medians in genet order, from cutoffs.tsv
+    local meds="" s m
+    for s in "${GENETS[@]}"; do
+        m=$(awk -v s="${s}" '$1==s{print $2}' "${cut}")
+        [[ -n "${m}" ]] || error "no median for ${s} in ${cut}"
+        meds+="${m} "
+    done
+    log "reldepth: medians (cutoffs.tsv) ${GENETS[*]} = ${meds}${region:+ | region ${region}}"
+
+    # 1. Per-site table (BED-like, so it can be intersected with the high-depth layer)
+    #    chrom start end flagged bal_allhet dp_<genet>x7 rel_cut
+    bcftools view ${region:+-r "${region}"} -s "$(paste -sd, "${GENET_FILE}")" -m2 -M2 -v snps -Ou "${NATIVE_VCF}" \
+      | bcftools query -f '%CHROM\t%POS\t%INFO/ExcessHet[\t%GT:%AD:%DP]\n' \
+      | awk -F'\t' -v OFS='\t' -v meds="${meds}" -v gen="${GENETS[*]}" \
+            -v lo="${AB_LO}" -v hi="${AB_HI}" -v mr="${AB_MIN_READS}" -v ahm="${ALLHET_MIN_CALLED}" '
+          BEGIN{ ng=split(meds, md, " "); split(gen, gn, " ")
+                 printf "chrom\tstart\tend\tflagged\tbal_allhet"; for(k=1;k<=ng;k++) printf "\tdp_%s", gn[k]; print "\trel_cut" }
+          {
+            fl = ($3!="." && $3!="" && $3+0>=20)
+            nc=0; nh=0; r=0; a=0; rel=0; line=""
+            for(i=4;i<=NF;i++){
+              split($i, x, ":"); g=x[1]; dp=(x[3] ~ /^[0-9]+$/) ? x[3]+0 : 0
+              line = line "\t" dp; rel += dp/md[i-3]
+              if(g ~ /\./) continue
+              nc++; split(g, al, /[\/|]/)
+              if(al[1]!=al[2]){ nh++; split(x[2], ad, ",")
+                if(ad[1] ~ /^[0-9]+$/) r+=ad[1]; if(ad[2] ~ /^[0-9]+$/) a+=ad[2] }
+            }
+            n=r+a
+            bal = (n>=mr && a/n>=lo && a/n<=hi)
+            ah  = (nc>=ahm && nh==nc)
+            printf "%s\t%d\t%d\t%d\t%d%s\t%.4f\n", $1, $2-1, $2, fl, (fl && bal && ah), line, rel/ng
+          }' \
+      | bgzip -@ 4 > "${sites}"
+    log "reldepth: $(zcat "${sites}" | awk 'END{print NR-1}') sites -> ${sites}"
+
+    # 2. Scale check: median FORMAT/DP per genet over not-flagged SNPs
+    zcat "${sites}" | awk -F'\t' -v OFS='\t' -v meds="${meds}" -v gen="${GENETS[*]}" '
+        BEGIN{ ng=split(meds, md, " "); split(gen, gn, " ") }
+        NR>1 && $4==0 { n++; for(k=1;k<=ng;k++){ d=$(5+k); if(d>5000) d=5000; h[k,d]++ } }
+        END{ print "genet","median_mosdepth_cutoffs","median_vcf_dp_not_flagged","ratio_vcf_over_mosdepth"
+             for(k=1;k<=ng;k++){ c=0; for(d=0; d<=5000; d++){ c+=h[k,d]; if(c>=n/2) break }
+               printf "%s\t%s\t%d\t%.3f\n", gn[k], md[k], d, d/md[k] } }' > "${out}/reldepth_medians.tsv"
+    column -t "${out}/reldepth_medians.tsv"
+    local vmeds
+    vmeds=$(awk 'NR>1{printf "%s ", $3}' "${out}/reldepth_medians.tsv")
+
+    # 3. Bins (0.01 wide, 0-6, last bin = >= 6) for both normalisations, plus
+    #    per-group counts and high-depth overlap
+    zcat "${sites}" | tail -n +2 \
+      | "${BT}" intersect -sorted -g "${G}" -c -a - -b "${hd}" \
+      | awk -F'\t' -v OFS='\t' -v vmeds="${vmeds}" -v bins="${out}/reldepth_bins.tsv" -v grp="${out}/reldepth_groups.tsv" '
+          BEGIN{ ng=split(vmeds, vm, " ") }
+          function add(gname, norm, v,   b){ b=int(v/0.01); if(b>600) b=600; H[gname SUBSEP norm SUBSEP b]++ }
+          {
+            relc=$(6+ng); relv=0
+            for(k=1;k<=ng;k++) relv += (vm[k]>0 ? $(5+k)/vm[k] : 0)
+            relv/=ng; inhd=($NF>0)
+            ng_=1; G1[1]=($4 ? "flagged" : "not_flagged")
+            if($4){ ng_=2; G1[2]=($5 ? "flagged_bal_allhet" : "flagged_rest") }
+            for(j=1;j<=ng_;j++){ g=G1[j]; N[g]++; HD[g]+=inhd; add(g,"cutoffs",relc); add(g,"vcf",relv) }
+          }
+          END{
+            print "group","norm","bin_lo","n" > bins
+            for(key in H){ split(key, p, SUBSEP); printf "%s\t%s\t%.2f\t%d\n", p[1], p[2], p[3]*0.01, H[key] > bins }
+            print "group","n_sites","n_in_v2_highdepth" > grp
+            for(g in N) print g, N[g], HD[g] > grp
+          }'
+
+    # 4. Summary table + histograms
+    "${rscript}" "${WORK_DIR}/plot_reldepth.R" "${out}"
+    column -t "${out}/reldepth_summary.tsv"
+    log "reldepth: done -> ${out}"
+}
+
+################################################################################
 # DISPATCH (no "all": thresholds and window are agreed between phases)
 ################################################################################
 case "${PHASE}" in
@@ -382,5 +488,6 @@ case "${PHASE}" in
     window)  phase_window ;;
     union)   phase_union ;;
     remask)  phase_remask ;;
-    *) error "usage: bash mask_v3_genets.sh stats|check|depth|paralog|window|union|remask" ;;
+    reldepth) phase_reldepth ;;
+    *) error "usage: bash mask_v3_genets.sh stats|check|depth|paralog|window|union|remask|reldepth" ;;
 esac

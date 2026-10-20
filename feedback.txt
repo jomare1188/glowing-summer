@@ -397,3 +397,23 @@ de Tatiana, guardado como snp_calling/mask_v3_genets.sh; una libreria por genet:
   (Version con las 13 librerias, sin colapsar clones: 19% reales, 31% sesgados, 65% todas het.)
   BAMs nativos (results/native/bam/, 566 GB): se GUARDAN hasta que Tatiana decida la mascara y
   se haga la Parte B (necesita 552/554/559; una corrida nueva de ANGSD necesitaria los 18).
+
+[19 oct 2026 - Jorge] PROFUNDIDAD RELATIVA EN LA CAPA ExcessHet >= 20 (pedido de Tatiana 19 oct).
+Por sitio: DP de cada genet / su mediana (cutoffs.tsv), promedio de los 7 genets
+(fase "reldepth" de snp_calling/mask_v3_genets.sh; grafico con snp_calling/plot_reldepth.R).
+Figura:  https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/v3_genets/reldepth/reldepth_hist.png
+Tabla:   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/results/masks/v3_genets/reldepth/reldepth_summary.tsv
+  (medianas de cutoffs.tsv)        n          mediana   <0.5x   0.5-1.5x   1.5-2.5x   >=2.5x
+  no marcados                      15,640,926  0.69x     41.6%   34.0%      19.6%      4.8%
+  marcados                            882,874  2.35x      1.1%   23.2%      29.9%     45.9%
+  marcados balanceados + todos het    565,983  2.33x      1.2%   25.4%      28.1%     45.3%
+  -> Los marcados NO se agrupan cerca de 1x: mediana ~2.3x, distribucion ancha de ~1x a >4x
+     (no un pico fino en 2x). Segun la regla de Tatiana: la mascara se queda.
+  79% de los marcados ya caen en la capa de alta profundidad de v2 (19% de los no marcados).
+  OJO escala: el DP del VCF (GATK) cuenta ~0.61-0.73 de lo que cuenta mosdepth, asi que con las
+  medianas de cutoffs.tsv los no marcados quedan en 0.69x. Normalizando por la mediana del DP del
+  VCF (no marcados = 1.02x), los marcados quedan en 3.5x: la conclusion no cambia.
+  ~23% de los marcados (~205k sitios) estan entre 0.5x y 1.5x: por profundidad no se distinguen
+  de heterocigosis real.
+  Muchos no marcados tienen profundidad muy baja (42% < 0.5x: SNPs vistos en pocos genets).
+BAMs nativos: se siguen guardando.

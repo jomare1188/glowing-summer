@@ -1,0 +1,9 @@
+normalisation	group	n_sites	median_x	mode_x	pct_lt0.5	pct_0.5_1.5	pct_1.5_2.5	pct_ge2.5	pct_in_v2_highdepth
+cutoffs	not_flagged	15640926	0.695	0.125	41.6	34	19.6	4.8	19.3
+cutoffs	flagged	882874	2.355	2.025	1.1	23.2	29.9	45.9	79.3
+cutoffs	flagged_bal_allhet	565983	2.325	1.275	1.2	25.4	28.1	45.3	77.8
+cutoffs	flagged_rest	316891	2.405	2.225	0.8	19.2	33	47.1	82
+vcf	not_flagged	15640926	1.025	0.125	32.9	28.4	19.2	19.5	19.3
+vcf	flagged	882874	3.495	2.825	0.1	10.4	19.2	70.2	79.3
+vcf	flagged_bal_allhet	565983	3.445	1.875	0.2	11.9	20	67.9	77.8
+vcf	flagged_rest	316891	3.575	3.225	0.1	7.7	17.7	74.4	82
