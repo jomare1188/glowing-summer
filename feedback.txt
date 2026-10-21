@@ -434,3 +434,33 @@ Tatiana con cambios minimos: snp_calling/roh_v4.sh (original: ROH_tatiana.sh). S
   largo 0-0.04. F_ROH mas bajo en 554, 556 (genet FS831), 559 (FS836s6) y 561; en d09
   tambien 555, 560, 562.
   Enviado a la carpeta de Drive de Tatiana: v4_roh/.
+
+[21 oct 2026 - Jorge] MENSAJE PARA TATIANA (ROH, Paso 6):
+  Hola Tatiana, ya corri el ROH sobre los dos all-sites v2. Todo esta en tu carpeta de Drive,
+  en v4_roh/ (d20/ y d09/: froh_per_tree.csv, short/medium/long .hom, .hom.indiv y .log,
+  callable.bed, snp_counts.txt; ademas versions.txt y el script que corri, roh_v4.sh).
+
+  Chequeos:
+  - md5 de los dos archivos: iguales a los tuyos.
+  - pb callable: d20 159,667,585 y d09 137,293,324, exactamente los que esperabas.
+  - SNPs (Chr01-Chr17, bialelicos polimorficos -> call rate 90%):
+      d20 275,171 -> 240,578 ; d09 318,024 -> 256,336.
+
+  Un error en el script: plink2 cambia los nombres Chr01..Chr17 por 1..17 al convertir el VCF.
+  Entonces los segmentos del .hom no cruzaban con callable.bed y todos los F_ROH salian 0.
+  Lo corregi en el paso 6c (se vuelven a poner los nombres Chr01..Chr17 antes del bedtools).
+  Los ROH en si no cambian; solo el calculo de F_ROH.
+  Otros cambios menores: rutas a mis archivos locales (son los mismos, por el md5); el md5 y
+  las pb callable detienen el script si no coinciden; los arboles sin ROH en una clase salen
+  con una fila en 0. Todo lo demas (filtros y parametros de --homozyg) es igual a tu script.
+
+  Resultados (F_ROH = pb callable dentro de ROH / pb callable totales):
+                 corto (>=100 kb)   medio (>=500 kb)   largo (>=1500 kb)
+      d20        0.33 - 0.76        0.06 - 0.48        0 - 0.13
+      d09        0.22 - 0.82        0.001 - 0.38       0 - 0.04
+  Los valores mas bajos son 554, 556, 559 y 561 (y en d09 tambien 555, 560 y 562).
+  Ojo: en la clase corta los valores son altos (hasta ~3/4 del genoma callable dentro de ROH).
+  Viene de los parametros (p. ej. gap de 1000 kb); vale la pena mirarlo antes de interpretarlo.
+
+  Los BAMs nativos los seguimos guardando hasta que me digas que ya no hacen falta (Parte B de
+  clonalidad). Quedo atento.
