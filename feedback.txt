@@ -417,3 +417,20 @@ Tabla:   https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/resu
   de heterocigosis real.
   Muchos no marcados tienen profundidad muy baja (42% < 0.5x: SNPs vistos en pocos genets).
 BAMs nativos: se siguen guardando.
+
+[21 oct 2026 - Jorge] ROH (Paso 6, pipeline v4) sobre los all-sites v2 del 1 oct. Script de
+Tatiana con cambios minimos: snp_calling/roh_v4.sh (original: ROH_tatiana.sh). Salidas: snp_calling/v4/roh/
+  md5 de los dos all-sites: OK (iguales a los de Tatiana).
+  pb callable: d20 159,667,585 ; d09 137,293,324 (iguales a lo esperado).
+  SNPs (Chr01-17, bialelicos polimorficos -> call rate 90%): d20 275,171 -> 240,578 ;
+  d09 318,024 -> 256,336.
+  OJO bug en el script original: plink2 convierte Chr01..Chr17 en 1..17, asi que el .hom no
+  cruzaba con callable.bed y todos los F_ROH salian 0. Corregido en roh_v4.sh (6c vuelve a
+  poner los nombres Chr01..). Arboles sin ROH en una clase salen con 0.
+  F_ROH (pb callable en ROH / pb callable), corto / medio / largo:
+    https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/v4/roh/d20/froh_per_tree.csv
+    https://github.com/jomare1188/glowing-summer/blob/main/snp_calling/v4/roh/d09/froh_per_tree.csv
+  d20: corto 0.33-0.76, medio 0.06-0.48, largo 0-0.13. d09: corto 0.22-0.82, medio 0.001-0.38,
+  largo 0-0.04. F_ROH mas bajo en 554, 556 (genet FS831), 559 (FS836s6) y 561; en d09
+  tambien 555, 560, 562.
+  Enviado a la carpeta de Drive de Tatiana: v4_roh/.

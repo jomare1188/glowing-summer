@@ -1,0 +1,34 @@
+PLINK v1.90b6.21 64-bit (19 Oct 2020)
+Options in effect:
+  --allow-extra-chr
+  --bfile v4/roh/d09/roh
+  --homozyg
+  --homozyg-density 50
+  --homozyg-gap 500
+  --homozyg-kb 1500
+  --homozyg-snp 100
+  --homozyg-window-het 1
+  --homozyg-window-missing 5
+  --homozyg-window-snp 100
+  --out v4/roh/d09/long
+
+Hostname: dgbiomol
+Working directory: /dados04/jorge/CALLICARPA_2/snp_calling
+Start time: Wed Oct 21 18:25:16 2026
+
+Random number seed: 1792617916
+515534 MB RAM detected; reserving 257767 MB for main workspace.
+256336 variants loaded from .bim file.
+13 people (0 males, 0 females, 13 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to v4/roh/d09/long.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 13 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.971586.
+256336 variants and 13 people pass filters and QC.
+Note: No phenotypes present.
+--homozyg: Scan complete, found 21 ROH.
+Results saved to v4/roh/d09/long.hom + v4/roh/d09/long.hom.indiv +
+v4/roh/d09/long.hom.summary .
+
+End time: Wed Oct 21 18:25:17 2026

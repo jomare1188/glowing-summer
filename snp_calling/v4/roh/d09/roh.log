@@ -1,0 +1,28 @@
+PLINK v2.0.0-a.6.9LM 64-bit Intel (29 Jan 2025)
+Options in effect:
+  --allow-extra-chr
+  --make-bed
+  --out v4/roh/d09/roh
+  --set-missing-var-ids @:#
+  --vcf v4/roh/d09/roh_input.vcf.gz
+
+Hostname: dgbiomol
+Working directory: /dados04/jorge/CALLICARPA_2/snp_calling
+Start time: Wed Oct 21 18:23:52 2026
+
+Random number seed: 1792617832
+515534 MiB RAM detected, ~503928 available; reserving 257767 MiB for main
+workspace.
+Using up to 256 threads (change this with --threads).
+--vcf: 256336 variants scanned.
+--vcf: v4/roh/d09/roh-temporary.pgen + v4/roh/d09/roh-temporary.pvar.zst +
+v4/roh/d09/roh-temporary.psam written.
+13 samples (0 females, 0 males, 13 ambiguous; 13 founders) loaded from
+v4/roh/d09/roh-temporary.psam.
+256336 variants loaded from v4/roh/d09/roh-temporary.pvar.zst.
+Note: No phenotype data present.
+Writing v4/roh/d09/roh.fam ... done.
+Writing v4/roh/d09/roh.bim ... done.
+Writing v4/roh/d09/roh.bed ... done.
+
+End time: Wed Oct 21 18:23:52 2026

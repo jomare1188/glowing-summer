@@ -67,6 +67,14 @@
 !snp_calling/results/d*/roh_analysis/*.log
 !snp_calling/results/d*/roh_analysis/density_*.txt
 
+# ROH v4 (roh_v4.sh, Tatiana's Step 6 on the masked v2 all-sites): small
+# outputs only; snps/roh_input VCFs, plink binaries and callable.bed stay out.
+!snp_calling/v4/roh/versions.txt
+!snp_calling/v4/roh/*/*.hom
+!snp_calling/v4/roh/*/*.hom.indiv
+!snp_calling/v4/roh/*/*.log
+!snp_calling/v4/roh/*/snp_counts.txt
+
 # --- MultiQC reports (self-contained HTML; the *_data/ side-cars are not) ---
 !qc/qc_results/reports/*.html
 

@@ -1,0 +1,1 @@
+d20 SNPs: polymorphic biallelic 275171, after 90% call rate 240578

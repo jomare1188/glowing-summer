@@ -1,0 +1,5 @@
+bcftools 1.19
+VCFtools (0.1.16)
+PLINK v2.0.0-a.6.9LM 64-bit Intel (29 Jan 2025)
+PLINK v1.90b6.21 64-bit (19 Oct 2020)
+bedtools v2.31.1
